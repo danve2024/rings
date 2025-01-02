@@ -11,7 +11,7 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
     #Default parameters
     #Asteroid
     if radius is None:
-        radius = Measure(100*m, 21*km, 1*km) # radius
+        radius = Measure(1*km, 21*km, 1*km) # radius
     if density is None:
         density = Measure(1.4*gcm3, 5.3*gcm3, 0.5*gcm3) # density
     if asteroid_sma is None:
