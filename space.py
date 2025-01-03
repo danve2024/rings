@@ -26,7 +26,7 @@ class SSBody:
         self.sma = sma
         self.period = self.calculate_period()
     def hill_sphere(self, a_sma: float, a_mass: float) -> float:
-        return a_sma * (a_mass / (3*(a_mass+self.mass))) ** (1/3)
+        return a_sma * math.pow(a_mass / (3 * (a_mass + self.mass)), 1/3)
     def calculate_period(self):
         return period(self.sma)
 

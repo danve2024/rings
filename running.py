@@ -1,4 +1,5 @@
 from progress.bar import IncrementalBar
+from math import prod
 
 class Progress:
     @staticmethod
@@ -23,10 +24,7 @@ class Progress:
         self.bar = IncrementalBar(self.name, max=self.len())
 
     def len(self):
-        ans = 1
-        for item in self.parameters:
-            ans *= len(item)
-        return ans
+        return prod(len(item) for item in self.parameters)
 
     @if_show
     def next(self, n=1):

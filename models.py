@@ -11,14 +11,14 @@ def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = 
     radius = round(radius)
     size = round(size)
 
-    size = size if size % 2 != 0 else size + 1
+    size |= 1
 
     center = size // 2
     ans = np.zeros((size, size))
-    for x in range(size):
-        for y in range(size):
-            if (x - center) ** 2 + (y - center) ** 2 <= radius ** 2:
-                ans[x, y] = 1
+    y, x = np.ogrid[:size, :size]
+    mask = (x - center) ** 2 + (y - center) ** 2 <= radius ** 2
+    ans[mask] = 1
+
     return ans
 
 
@@ -43,34 +43,23 @@ def crop(array: np.array, rows: int, end: bool = False) -> np.array:
     return new_array
 
 
-
 def cover(star: np.array, asteroid: np.array) -> list:
     data = []
     initial_area = np.count_nonzero(star)
-    area = np.count_nonzero(star)
 
     for i in range(len(star)):
         mask = crop(asteroid, i)
-        print(mask)
-        result = np.zeros((len(star), len(star[0])))
-        for x in range(len(star)):
-            for y in range(len(star[0])):
-                result[x, y] = float(int(star[x, y]) & int(mask[x, y]))
+        result = (star.astype(int) & mask.astype(int)).astype(float)
         area = initial_area - np.count_nonzero(result)
         data.append(area)
 
     for i in range(len(star) - 1, -1, -1):
         mask = crop(asteroid, i, True)
-        print(mask)
-        result = np.zeros((len(star), len(star[0])))
-        for x in range(len(star)):
-            for y in range(len(star[0])):
-                result[x, y] = float(int(star[x, y]) & int(mask[x, y]))
+        result = (star.astype(int) & mask.astype(int)).astype(float)
         area = initial_area - np.count_nonzero(result)
         data.append(area)
-    print(type(data))
+
     return data
 
 if __name__ == '__main__':
-    pass
     print(cover(disk(10), disk(1, size=20)))
