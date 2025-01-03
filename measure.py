@@ -1,8 +1,8 @@
 class Measure:
-    def __init__(self, minimum: float, maximum: float, delta: float):
+    def __init__(self, minimum: float, maximum: float, step: float):
         self.min = self.Unit(minimum)
         self.max = self.Unit(maximum)
-        self.delta = self.Unit(delta)
+        self.delta = self.Unit(step)
 
     def __iter__(self) -> iter:
         return iter(self.min + k * self.delta for k in range((self.max - self.min) // self.delta))

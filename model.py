@@ -11,19 +11,19 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
     #Default parameters
     #Asteroid
     if radius is None:
-        radius = Measure(1*km, 21*km, 1*km) # radius
+        radius = Measure(1*km, 21*km, 5*km) # radius
     if density is None:
-        density = Measure(1.4*gcm3, 5.3*gcm3, 0.5*gcm3) # density
+        density = Measure(1.3*gcm3, 5.3*gcm3, 1*gcm3) # density
     if asteroid_sma is None:
-        asteroid_sma = Measure(35 * au, 50 * au, 5 * au)  # semi-major axis
+        asteroid_sma = Measure(35*au, 50*au, 5*au)  # semi-major axis
 
     # Ring
     if eccentricity is None:
         eccentricity = Measure(0, 0.8, 0.2)  # eccentricity
     if inclination is None:
-        inclination = Measure(0 * deg, 90 * deg, 10 * deg)  # inclination
+        inclination = Measure(0*deg, 90*deg, 15 * deg)  # inclination
     if ring_density is None:
-        ring_density = Measure(0.01 * gcm3, 0.03 * gcm3, 0.01 * gcm3)  # density
+        ring_density = Measure(0.01 * gcm3, 0.03 * gcm3, 0.02 * gcm3)  # density
 
     bar = Progress('Progress',[radius, density, asteroid_sma, eccentricity, inclination, ring_density], show_progress)
     s = ''
@@ -69,5 +69,5 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
 
 
 if __name__ == '__main__':
-    calculate_parameters(print_values=True)
+    calculate_parameters()
 
