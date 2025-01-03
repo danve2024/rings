@@ -25,22 +25,15 @@ def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = 
 def crop(array: np.array, rows: int, end: bool = False) -> np.array:
     if array.size == 0:
         return np.array([])
+    if rows > array.shape[0]:
+        return np.zeros_like(array)
 
-    num_rows = array.shape[0]
-    if rows > num_rows:
-        new_array = np.zeros_like(array)
-        return new_array
-
-    new_array = np.zeros_like(array)
-
+    result = np.zeros_like(array)
     if end:
-        start_index = num_rows - rows
-        new_array[:rows] = array[start_index:]
+        result[-rows:] = array[-rows:]
     else:
-        start_index = num_rows - rows
-        new_array[start_index:] = array[:rows]
-
-    return new_array
+        result[:rows] = array[:rows]
+    return result
 
 
 def cover(star: np.array, asteroid: np.array) -> list:
