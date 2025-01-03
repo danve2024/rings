@@ -1,6 +1,6 @@
+import time
 from progress.bar import IncrementalBar
 from math import prod
-import time
 
 class Progress:
     @staticmethod
