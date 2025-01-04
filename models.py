@@ -1,6 +1,8 @@
 import numpy as np
 from measure import Measure
 from typing import Union
+from astropy.modeling.models import Gaussian2D
+import matplotlib.pyplot as plt
 
 
 def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None) -> np.array:
@@ -21,6 +23,14 @@ def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = 
 
     return ans
 
+def gaussian(size: Union[float, Measure.Unit], radius: Union[float, Measure.Unit] = 1) -> np.array:
+    grid = size // 2
+    x = np.linspace(-grid, grid, size)
+    y = np.linspace(-grid, grid, size)
+    xs, ys = np.meshgrid(x, y)
+    model = Gaussian2D(amplitude=1, x_mean=0, y_mean=0, x_stddev=2*radius, y_stddev=2*radius)(xs, ys)
+    return model
+
 
 def crop(array: np.array, rows: int, end: bool = False) -> np.array:
     if array.size == 0:
@@ -30,29 +40,43 @@ def crop(array: np.array, rows: int, end: bool = False) -> np.array:
 
     result = np.zeros_like(array)
     if end:
-        result[-rows:] = array[-rows:]
-    else:
-        result[:rows] = array[:rows]
+        result[rows:] = array[:-rows]
+    elif rows != 0:
+        result[:-rows] = array[rows:]
+
     return result
 
 
 def cover(star: np.array, asteroid: np.array) -> list:
     data = []
-    initial_area = np.count_nonzero(star)
+    grid = (len(star), len(star[0]))
+
+    for i in range(len(star) - 1, 0, -1):
+        mask = crop(asteroid, i, True)
+        result = np.zeros(grid)
+        for x in range(len(star)):
+            for y in range(len(star[0])):
+                result[x][y] = max(0, star[x][y] - mask[x][y])
+        area = np.sum(result)
+        data.append(float(area))
+        # show_model(result)
 
     for i in range(len(star)):
         mask = crop(asteroid, i)
-        result = (star.astype(int) & mask.astype(int)).astype(float)
-        area = initial_area - np.count_nonzero(result)
-        data.append(area)
-
-    for i in range(len(star) - 1, -1, -1):
-        mask = crop(asteroid, i, True)
-        result = (star.astype(int) & mask.astype(int)).astype(float)
-        area = initial_area - np.count_nonzero(result)
-        data.append(area)
+        result = np.zeros(grid)
+        for x in range(len(star)):
+            for y in range(len(star[0])):
+                result[x][y] = max(0, star[x][y] - mask[x][y])
+        area = np.sum(result)
+        data.append(float(area))
+        # show_model(result)
 
     return data
 
+def show_model(model: np.array):
+    plt.figure()
+    plt.imshow(model)
+    plt.show()
+
 if __name__ == '__main__':
-    print(cover(disk(10), disk(1, size=20)))
+    print(cover(gaussian(100, 10), disk(10, 100)))

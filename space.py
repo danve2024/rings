@@ -3,7 +3,7 @@ from formulas import *
 from measure import Measure
 from math import pi
 from typing import Union
-from models import disk
+from models import disk, gaussian
 
 
 # Functions that require other Solar System objects
@@ -72,10 +72,10 @@ class Asteroid:
         self.angular_diameter = angular_diameter(self.radius, self.sma) # angular diameter
         self.synodic_period = synodic_period(self.sma)  # synodic period
         self.angular_velocity = angular_velocity(self.sma, self.synodic_period) # angular velocity
-        self.disk = disk(self.angular_diameter/2) # disk
+        self.model = disk(self.angular_diameter/2) # disk
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
-        self.disk = disk(self.angular_diameter/2, size)
+        self.model = disk(self.angular_diameter/2, size)
 
     def __str__(self):
         return f'R:{self.radius(km)}km D:{self.density(gcm3)}g/cm3 A:{self.sma(au)} V:{self.volume(m3)}m3 M:{self.mass(kg)}kg' + ' ' + str(self.rings)
@@ -91,10 +91,10 @@ class Star:
         self.surface_brightness = self.magnitude / self.area # surface brightness
         self.illuminance = illuminance(magnitude) # illuminance
         self.brightness = self.illuminance / self.area # brightness
-        self.disk = disk(self.radius) # disk
+        self.model = gaussian(self.radius*2) # disk
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
-        self.disk = disk(self.radius, size)
+        self.model = gaussian(size)
 
     def match(self, other: Asteroid) -> None:
         size = max(2 * self.radius, other.angular_diameter)

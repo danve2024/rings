@@ -3,9 +3,8 @@ from units import *
 from formulas import *
 from running import Progress
 from space import Asteroid, Rings, Star, hill_sphere
-from models import disk
 
-star = Star(6.0 * mag, 1 * arcsec)
+star = Star(6.0 * mag, 0.8 * arcsec)
 
 def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_sma: Measure=None, eccentricity: Measure=None, inclination: Measure=None, ring_density: Measure=None, filename='model.txt', show_progress=True, print_values=False):
     #Default parameters
