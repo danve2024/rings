@@ -125,6 +125,7 @@ def normalize(array: np.array) -> np.array:
         for y in range(len(array[0])):
             if array[x][y] > 1:
                 array[x][y] = 1
+    return array
 
 def show_model(model: np.array):
     plt.figure()
@@ -132,4 +133,4 @@ def show_model(model: np.array):
     plt.show()
 
 if __name__ == '__main__':
-    show_model(disk(10, 50) + elliptical_ring(51, 20, 0.2, 1, 80, 1))
+    cover(gaussian(50), normalize(disk(10, 50) + elliptical_ring(51, 20, 0.2, 1, 80, 0.5)))
