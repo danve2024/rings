@@ -23,12 +23,19 @@ def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = 
 
     return ans
 
-def gaussian(size: Union[float, Measure.Unit], radius: Union[float, Measure.Unit] = 1) -> np.array:
+def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None) -> np.array:
+    if size is None:
+        size = diameter
+
+    diameter = round(diameter)
+    size = round(size)
+
     grid = size // 2
     x = np.linspace(-grid, grid, size)
     y = np.linspace(-grid, grid, size)
     xs, ys = np.meshgrid(x, y)
-    model = Gaussian2D(amplitude=1, x_mean=0, y_mean=0, x_stddev=2*radius, y_stddev=2*radius)(xs, ys)
+    model = Gaussian2D(amplitude=1, x_mean=0, y_mean=0, x_stddev=diameter/3, y_stddev=diameter/3)(xs, ys)
+
     return model
 
 
@@ -81,4 +88,4 @@ def show_model(model: np.array):
     plt.show()
 
 if __name__ == '__main__':
-    print(cover(gaussian(10, 2), disk(3, 10)))
+    print(cover(gaussian(100), disk(30, 100)))
