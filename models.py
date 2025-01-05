@@ -39,12 +39,14 @@ def crop(array: np.array, rows: int, end: bool = False) -> np.array:
         return np.zeros_like(array)
 
     result = np.zeros_like(array)
-    if end:
-        result[rows:] = array[:-rows]
-    elif rows != 0:
-        result[:-rows] = array[rows:]
-
-    return result
+    if rows == 0:
+        return array
+    else:
+        if end:
+            result[rows:] = array[:-rows]
+        else:
+            result[:-rows] = array[rows:]
+        return result
 
 
 def cover(star: np.array, asteroid: np.array) -> list:
@@ -79,4 +81,4 @@ def show_model(model: np.array):
     plt.show()
 
 if __name__ == '__main__':
-    print(cover(gaussian(100, 10), disk(10, 100)))
+    print(cover(gaussian(10, 2), disk(3, 10)))

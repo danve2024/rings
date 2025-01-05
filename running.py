@@ -9,7 +9,6 @@ class Progress:
             if self.show_progress:
                 f(self)
                 return f
-
         return execute
 
     def __init__(self, name: str, parameters: list, show_progress: bool, operation_time: float=100):
