@@ -120,6 +120,12 @@ def cover(star: np.array, asteroid: np.array) -> list:
 
     return data
 
+def normalize(array: np.array) -> np.array:
+    for x in range(len(array)):
+        for y in range(len(array[0])):
+            if array[x][y] > 1:
+                array[x][y] = 1
+
 def show_model(model: np.array):
     plt.figure()
     plt.imshow(model)

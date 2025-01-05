@@ -1,10 +1,9 @@
 from units import *
 from formulas import *
 from measure import Measure
-from math import pi
+from math import pi, exp
 from typing import Union
-from models import disk, gaussian
-
+from models import disk, gaussian, elliptical_ring, normalize
 
 # Functions that require other Solar System objects
 
@@ -55,7 +54,25 @@ class Rings:
         self.mass = mass # mass
         self.eccentricity = eccentricity # eccentricity
         self.inclination = inclination # inclination
-    def __str__(self):
+        self.volume = self.mass / self.density # volume
+
+        self.mass_specific_absorption_coefficient = 2.3 * 10 ** (-3) * (m**2/g) # mass-specific absorption coefficient for silicate dust with quartz dominating
+        self.absorption_coefficient = self.mass_specific_absorption_coefficient * self.density # absorption coefficient for silicate
+        self.absorption = exp(-self.absorption_coefficient) # light absorption
+
+        self.angular_sma = None # angular semi-major axis
+        self.size = None  # matrix size
+        self.model = None  # model of the ring
+
+    def init(self, sma: Union[float, Measure.Unit], size: Union[float, Measure.Unit]) -> None:
+        self.angular_sma = to_angle(self.sma, sma)  # angular size of semi-major axis
+        self.size = size # matrix size
+        self.model = elliptical_ring(self.size, self.angular_sma, self.eccentricity, self.width, self.inclination, self.absorption)
+
+    def adjust(self, size) -> None:
+        self.model = elliptical_ring(size, self.angular_sma, self.eccentricity, self.width, self.inclination, self.absorption)
+
+    def __str__(self) -> str:
         return f'd:{self.density(gcm3)}g/cm3 a:{self.sma(km)}km m:{self.mass(kg)}kg e:{self.eccentricity} i:{self.inclination(deg)}°\n'
 
 
@@ -72,10 +89,15 @@ class Asteroid:
         self.angular_diameter = angular_diameter(self.radius, self.sma) # angular diameter
         self.synodic_period = synodic_period(self.sma)  # synodic period
         self.angular_velocity = angular_velocity(self.sma, self.synodic_period) # angular velocity
-        self.model = disk(self.angular_diameter/2) # disk
+        self.disk = disk(self.angular_diameter/2) # disk
+        self.rings.init(self.sma, self.model.shape[0])
+        self.model = normalize(self.disk + self.rings)
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
-        self.model = disk(self.angular_diameter/2, size)
+        self.disk = disk(self.angular_diameter/2, size)
+        self.rings.adjust(size)
+        self.model = normalize(self.disk + self.rings.model)
+
 
     def __str__(self):
         return f'R:{self.radius(km)}km D:{self.density(gcm3)}g/cm3 A:{self.sma(au)} V:{self.volume(m3)}m3 M:{self.mass(kg)}kg' + ' ' + str(self.rings)

@@ -18,6 +18,9 @@ def angular_area(angular_radius: Union[float, Measure.Unit]) -> Union[float, Mea
 def angular_diameter(radius: Union[float, Measure.Unit], distance: Union[float, Measure.Unit]) -> Union[float, Measure.Unit]:
     return 2 * math.degrees(radius / distance)
 
+def to_angle(size: Union[float, Measure.Unit], distance: Union[float, Measure.Unit]) -> Union[float, Measure.Unit]:
+    return 2 * math.degrees(size/2 / distance)
+
 def period(sma: Union[float, Measure.Unit]) -> Union[float, Measure]:
     return math.sqrt((sma/au)**3) * yrs
 
