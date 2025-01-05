@@ -3,7 +3,7 @@ from measure import Measure
 from typing import Union
 from astropy.modeling.models import Gaussian2D
 import matplotlib.pyplot as plt
-from math import sin, radians
+from math import cos, sqrt, radians
 
 
 def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None) -> np.array:
@@ -27,21 +27,32 @@ def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = 
 
 def elliptical_ring(size: Union[float, Measure.Unit], a: Union[float, Measure.Unit], e: Union[float, Measure.Unit], w: Union[float, Measure.Unit], i: Union[float, Measure.Unit], fill: float, focus: tuple = None) -> np.array:
     if focus is None:
-        focus = (round(size/2), round(size/2))
+        focus = (round(size / 2), round(size / 2))
+    fy, fx = focus
     size = round(size)
+    shape = (size, size)
     a = round(a)
     w = round(w)
 
-    shape = (size, size)
-    fy, fx = focus
     c = e * a
-    b = np.sqrt(a ** 2 - c ** 2) * sin(radians(i))
+    b0 = sqrt(a ** 2 - c ** 2)
+    b = b0 * cos(radians(i))
+
     center_x = fx + c
     center_y = fy
+
     y, x = np.ogrid[:shape[0], :shape[1]]
 
-    outer_mask = ((x - center_x) / a) ** 2 + ((y - center_y) / b) ** 2 <= 1
-    inner_mask = ((x - center_x) / (a - w)) ** 2 + ((y - center_y) / (b - w)) ** 2 <= 1
+    if abs(b) < 1e-12:
+        outer_mask = np.zeros(shape, dtype=bool)
+        inner_mask = np.zeros(shape, dtype=bool)
+    else:
+        outer_mask = ((x - center_x) / a) ** 2 + ((y - center_y) / b) ** 2 <= 1
+
+        b_inner = max(b - w, 1e-9)
+        a_inner = max(a - w, 1e-9)
+        inner_mask = ((x - center_x) / a_inner) ** 2 + ((y - center_y) / b_inner) ** 2 <= 1
+
     ring_mask = outer_mask & ~inner_mask
 
     arr = np.zeros(shape, dtype=float)
@@ -115,4 +126,4 @@ def show_model(model: np.array):
     plt.show()
 
 if __name__ == '__main__':
-    show_model(disk(10, 50) + elliptical_ring(51, 20, 0.2, 1, 5, 1))
+    show_model(disk(10, 50) + elliptical_ring(51, 20, 0.2, 1, 80, 1))
