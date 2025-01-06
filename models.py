@@ -3,56 +3,49 @@ from measure import Measure
 from typing import Union
 from astropy.modeling.models import Gaussian2D
 import matplotlib.pyplot as plt
-from math import cos, sqrt, radians
+from math import sin, sqrt, radians
 
 
-def disk(radius: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None) -> np.array:
-    # problem with units or numpy array sizes
+def disk(radius: float, size: float = None) -> np.ndarray:
     if size is None:
-        size = int(radius * 2)
+        size = 2 * radius + 1
+    size = int(round(size))
+    center = (size - 1) / 2.0
 
-    radius = round(radius)
-    size = round(size)
-
-    size |= 1
-
-    center = size // 2
-    ans = np.zeros((size, size))
+    ans = np.zeros((size, size), dtype=float)
     y, x = np.ogrid[:size, :size]
+
     mask = (x - center) ** 2 + (y - center) ** 2 <= radius ** 2
     ans[mask] = 1
-
     return ans
 
 
 def elliptical_ring(size: Union[float, Measure.Unit], a: Union[float, Measure.Unit], e: Union[float, Measure.Unit], w: Union[float, Measure.Unit], i: Union[float, Measure.Unit], fill: float, focus: tuple = None) -> np.array:
-    if focus is None:
-        focus = (round(size / 2), round(size / 2))
-    fy, fx = focus
-    size = round(size)
+    size = int(round(size))
     shape = (size, size)
-    a = round(a)
-    w = round(w)
+    a = float(a)
+    w = float(w)
 
+    if focus is None:
+        cxy = (size - 1) / 2.0
+        focus = (cxy, cxy)
+    fy, fx = focus
     c = e * a
     b0 = sqrt(a ** 2 - c ** 2)
-    b = b0 * cos(radians(i))
-
+    b = b0 * sin(radians(i))
     center_x = fx + c
     center_y = fy
 
-    y, x = np.ogrid[:shape[0], :shape[1]]
+    y, x = np.ogrid[:size, :size]  # так будет чуть быстрее
 
     if abs(b) < 1e-12:
         outer_mask = np.zeros(shape, dtype=bool)
         inner_mask = np.zeros(shape, dtype=bool)
     else:
         outer_mask = ((x - center_x) / a) ** 2 + ((y - center_y) / b) ** 2 <= 1
-
-        b_inner = max(b - w, 1e-9)
         a_inner = max(a - w, 1e-9)
+        b_inner = max(b - w, 1e-9)
         inner_mask = ((x - center_x) / a_inner) ** 2 + ((y - center_y) / b_inner) ** 2 <= 1
-
     ring_mask = outer_mask & ~inner_mask
 
     arr = np.zeros(shape, dtype=float)
@@ -106,7 +99,7 @@ def cover(star: np.array, asteroid: np.array) -> list:
                 result[x][y] = max(0, star[x][y] - mask[x][y])
         area = np.sum(result)
         data.append(float(area))
-        # show_model(result)
+        show_model(result)
 
     for i in range(len(star)):
         mask = crop(asteroid, i)
@@ -127,10 +120,12 @@ def normalize(array: np.array) -> np.array:
                 array[x][y] = 1
     return array
 
-def show_model(model: np.array):
+def show_model(model: np.ndarray) -> None:
     plt.figure()
-    plt.imshow(model)
+    plt.imshow(model, origin='lower', cmap='viridis')
+    plt.colorbar()
     plt.show()
 
+
 if __name__ == '__main__':
-    cover(gaussian(50), normalize(disk(10, 50) + elliptical_ring(51, 20, 0.2, 1, 80, 0.5)))
+    show_model(elliptical_ring(50, 4, 0.8, 1, 90, 1))

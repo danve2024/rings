@@ -90,7 +90,7 @@ class Asteroid:
         self.synodic_period = synodic_period(self.sma)  # synodic period
         self.angular_velocity = angular_velocity(self.sma, self.synodic_period) # angular velocity
         self.disk = disk(self.angular_diameter/2) # disk
-        self.rings.init(self.sma, self.model.shape[0])
+        self.rings.init(self.sma, self.disk.shape[0])
         self.model = normalize(self.disk + self.rings)
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
