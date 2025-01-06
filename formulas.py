@@ -29,3 +29,15 @@ def velocity(sma: Union[float, Measure.Unit], time: Union[float, Measure.Unit]) 
 
 def angular_velocity(sma: Union[float, Measure.Unit], time: Union[float, Measure.Unit]) -> Union[float, Measure]:
     return math.degrees(velocity(sma, time) / sma)
+
+def format_data(data: list) -> list:
+    ans = []
+    initial_illuminance = data[0]
+    for i in range(len(data)):
+        illuminance = data[i]
+        magnitude_change = -2.5 * math.log10(initial_illuminance/illuminance)
+        phase = i / (len(data) - 1)
+        ans.append((phase, magnitude_change))
+
+    return ans
+

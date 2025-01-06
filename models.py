@@ -1,4 +1,6 @@
 import numpy as np
+
+from formulas import format_data
 from measure import Measure
 from typing import Union
 from astropy.modeling.models import Gaussian2D
@@ -99,7 +101,7 @@ def cover(star: np.array, asteroid: np.array) -> list:
                 result[x][y] = max(0, star[x][y] - mask[x][y])
         area = np.sum(result)
         data.append(float(area))
-        show_model(result)
+        # show_model(result)
 
     for i in range(len(star)):
         mask = crop(asteroid, i)
@@ -111,7 +113,7 @@ def cover(star: np.array, asteroid: np.array) -> list:
         data.append(float(area))
         # show_model(result)
 
-    return data
+    return format_data(data)
 
 def normalize(array: np.array) -> np.array:
     for x in range(len(array)):
@@ -128,4 +130,4 @@ def show_model(model: np.ndarray) -> None:
 
 
 if __name__ == '__main__':
-    show_model(elliptical_ring(50, 4, 0.8, 1, 90, 1))
+    print(format_data(cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 8, 0.5, 1, 90, 0.2)))))
