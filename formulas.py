@@ -35,7 +35,7 @@ def format_data(data: list) -> list:
     initial_illuminance = data[0]
     for i in range(len(data)):
         illuminance = data[i]
-        magnitude_change = -2.5 * math.log10(initial_illuminance/illuminance)
+        magnitude_change = 2.5 * math.log10(initial_illuminance/illuminance)
         phase = i / (len(data) - 1)
         ans.append((phase, magnitude_change))
 
