@@ -5,7 +5,7 @@ from measure import Measure
 from typing import Union
 from astropy.modeling.models import Gaussian2D
 import matplotlib.pyplot as plt
-from math import sin, sqrt, radians
+from math import sin, cos, sqrt, radians
 
 
 def disk(radius: float, size: float = None) -> np.ndarray:
@@ -22,7 +22,15 @@ def disk(radius: float, size: float = None) -> np.ndarray:
     return ans
 
 
-def elliptical_ring(size: Union[float, Measure.Unit], a: Union[float, Measure.Unit], e: Union[float, Measure.Unit], w: Union[float, Measure.Unit], i: Union[float, Measure.Unit], fill: float, focus: tuple = None) -> np.array:
+def elliptical_ring(
+    size: Union[float, Measure.Unit], 
+    a: Union[float, Measure.Unit], 
+    e: Union[float, Measure.Unit], 
+    w: Union[float, Measure.Unit], 
+    i: Union[float, Measure.Unit],
+    fill: float, 
+    rotation_angle: Union[float, Measure.Unit] = 90,
+    focus: tuple = None) -> np.array:
     size = int(round(size))
     shape = (size, size)
     a = float(a)
@@ -35,19 +43,27 @@ def elliptical_ring(size: Union[float, Measure.Unit], a: Union[float, Measure.Un
     c = e * a
     b0 = sqrt(a ** 2 - c ** 2)
     b = b0 * sin(radians(i))
-    center_x = fx + c
-    center_y = fy
+    
+    y, x = np.ogrid[:size, :size]
 
-    y, x = np.ogrid[:size, :size]  # так будет чуть быстрее
+    x_centered = x - fx
+    y_centered = y - fy
+
+    theta = radians(rotation_angle)
+    print("rotation angle: ", rotation_angle)
+    x_rot = x_centered * cos(theta) + y_centered * sin(theta)
+    y_rot = -x_centered * sin(theta) + y_centered * cos(theta)
+
+    x_rot = x_rot - c
 
     if abs(b) < 1e-12:
         outer_mask = np.zeros(shape, dtype=bool)
         inner_mask = np.zeros(shape, dtype=bool)
     else:
-        outer_mask = ((x - center_x) / a) ** 2 + ((y - center_y) / b) ** 2 <= 1
+        outer_mask = (x_rot / a) ** 2 + (y_rot / b) ** 2 <= 1
         a_inner = max(a - w, 1e-9)
         b_inner = max(b - w, 1e-9)
-        inner_mask = ((x - center_x) / a_inner) ** 2 + ((y - center_y) / b_inner) ** 2 <= 1
+        inner_mask = (x_rot / a_inner) ** 2 + (y_rot / b_inner) ** 2 <= 1
     ring_mask = outer_mask & ~inner_mask
 
     arr = np.zeros(shape, dtype=float)
@@ -130,4 +146,8 @@ def show_model(model: np.ndarray) -> None:
 
 
 if __name__ == '__main__':
-    print(format_data(cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 8, 0.5, 1, 90, 0.2)))))
+    # print((cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 8, 0.5, 1, 90, 0.2)))))
+    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1, 0.0,))
+    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1, 45.0))
+    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1))
+
