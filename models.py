@@ -108,26 +108,32 @@ def crop(array: np.array, rows: int, end: bool = False) -> np.array:
 def cover(star: np.array, asteroid: np.array) -> list:
     data = []
     grid = (len(star), len(star[0]))
+    initial_area = np.sum(star)
 
     for i in range(len(star) - 1, 0, -1):
         mask = crop(asteroid, i, True)
-        result = np.zeros(grid)
-        for x in range(len(star)):
-            for y in range(len(star[0])):
-                result[x][y] = max(0, star[x][y] - mask[x][y])
-        area = np.sum(result)
-        data.append(float(area))
-        # show_model(result)
+        if np.count_nonzero(mask) != 0:
+            result = np.zeros(grid)
+            for x in range(len(star)):
+                for y in range(len(star[0])):
+                    result[x][y] = max(0, star[x][y] - mask[x][y])
+            area = np.sum(result)
+            data.append(float(area))
+            # show_model(result)
 
     for i in range(len(star)):
         mask = crop(asteroid, i)
-        result = np.zeros(grid)
-        for x in range(len(star)):
-            for y in range(len(star[0])):
-                result[x][y] = max(0, star[x][y] - mask[x][y])
-        area = np.sum(result)
-        data.append(float(area))
-        # show_model(result)
+        if np.count_nonzero(mask) != 0:
+            result = np.zeros(grid)
+            for x in range(len(star)):
+                for y in range(len(star[0])):
+                    result[x][y] = max(0, star[x][y] - mask[x][y])
+            area = np.sum(result)
+            data.append(float(area))
+            # show_model(result)
+
+    data.insert(0, initial_area)
+    data.append(initial_area)
 
     return format_data(data)
 
@@ -146,5 +152,5 @@ def show_model(model: np.ndarray) -> None:
 
 
 if __name__ == '__main__':
-    cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 5, 0.3, 1, 30, 0.5)))
+    print(cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 5, 0.3, 1, 30, 0.5))))
 
