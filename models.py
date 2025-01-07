@@ -50,7 +50,7 @@ def elliptical_ring(
     y_centered = y - fy
 
     theta = radians(rotation_angle)
-    print("rotation angle: ", rotation_angle)
+    # print("rotation angle: ", rotation_angle)
     x_rot = x_centered * cos(theta) + y_centered * sin(theta)
     y_rot = -x_centered * sin(theta) + y_centered * cos(theta)
 
@@ -146,8 +146,5 @@ def show_model(model: np.ndarray) -> None:
 
 
 if __name__ == '__main__':
-    # print((cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 8, 0.5, 1, 90, 0.2)))))
-    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1, 0.0,))
-    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1, 45.0))
-    show_model(disk(2, 51) + elliptical_ring(51, 13, 0.5, 2, 40, 1))
+    cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 5, 0.3, 1, 30, 0.5)))
 

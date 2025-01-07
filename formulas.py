@@ -41,6 +41,9 @@ def format_data(data: list) -> list:
 
     return ans
 
+def to_pixels(angle: Union[float, Measure.Unit], pixel: Union[float, Measure.Unit] = 1/90000) -> Union[float, Measure.Unit]:
+    return angle / pixel
+
 def ring_width(vol: Union[float, Measure.Unit], sma: Union[float, Measure.Unit], eccentricity: Union[float, Measure.Unit]) -> Union[float, Measure.Unit]:
     return vol / (math.pi ** 2 * sma ** 2 * math.sqrt(1 - eccentricity ** 2))
     # Derivation:

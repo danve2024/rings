@@ -51,10 +51,12 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
                                         bar.next()
                                     rings = Rings(d, a, m_ring, e, i) # create rings
                                     asteroid = Asteroid(rings, R, D, A, V, M) # create asteroid
-                                    s += str(asteroid)
+                                    data = star.occultation(asteroid)
+                                    s += str(data)
                                     if print_values:
                                         print(asteroid)
-                                    star.occultation(asteroid)
+                                        print(data)
+
 
 
 
@@ -68,5 +70,5 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
 
 
 if __name__ == '__main__':
-    calculate_parameters()
+    calculate_parameters(print_values=True)
 
