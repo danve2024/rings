@@ -41,3 +41,15 @@ def format_data(data: list) -> list:
 
     return ans
 
+def ring_width(vol: Union[float, Measure.Unit], sma: Union[float, Measure.Unit], eccentricity: Union[float, Measure.Unit]) -> Union[float, Measure.Unit]:
+    return vol / (math.pi ** 2 * sma ** 2 * math.sqrt(1 - eccentricity ** 2))
+    # Derivation:
+        # The shape of the ring can be approximated by a torus with a circular cross-section.
+        # The volume of torus is: 2π²Rr², R - torus radius, r - half the torus width
+        # To account for the eccentricity of the ring, we need to stretch the torus of unit radius by a and b times:
+        # The volume of stretched torus: V = 2π²abr, a - semi-major axis, b - semi-minor axis
+        # b = a√(1-e²), e - eccentricity
+        # V = 2π²a²r√(1-e²)
+        # Ring width: w = 2r = 2(V/(2π²a²√(1-e²)))
+        # w = V/(π²a²√(1-e²))
+

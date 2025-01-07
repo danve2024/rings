@@ -55,6 +55,7 @@ class Rings:
         self.eccentricity = eccentricity # eccentricity
         self.inclination = inclination # inclination
         self.volume = self.mass / self.density # volume
+        self.width = ring_width(self.volume, self.sma, self.eccentricity)
 
         self.mass_specific_absorption_coefficient = 2.3 * 10 ** (-3) * (m**2/g) # mass-specific absorption coefficient for silicate dust with quartz dominating
         self.absorption_coefficient = self.mass_specific_absorption_coefficient * self.density # absorption coefficient for silicate
@@ -91,7 +92,7 @@ class Asteroid:
         self.angular_velocity = angular_velocity(self.sma, self.synodic_period) # angular velocity
         self.disk = disk(self.angular_diameter/2) # disk
         self.rings.init(self.sma, self.disk.shape[0])
-        self.model = normalize(self.disk + self.rings)
+        self.model = normalize(self.disk + self.rings.model)
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
         self.disk = disk(self.angular_diameter/2, size)
