@@ -10,6 +10,12 @@ class Measure:
     def __len__(self) -> int:
         return (self.max - self.min)//self.delta
 
+    def __add__(self, other) -> list:
+        return list(self) + list(other)
+
+    def __radd__(self, other) -> list:
+        return list(other) + list(self)
+
     class Unit(float):
         def __add__(self, other):
             return Measure.Unit(super().__add__(float(other)))
@@ -47,3 +53,5 @@ class Measure:
         def __call__(self, n):
             return self/n
 
+def single(value: float) -> list[Measure.Unit]:
+    return [Measure.Unit(value)]

@@ -1,4 +1,4 @@
-from measure import Measure
+from measure import Measure, single
 from units import *
 from formulas import *
 from running import Progress
@@ -14,7 +14,7 @@ def calculate_parameters(radius: Measure=None, density: Measure=None, asteroid_s
     if density is None:
         density = Measure(1.3*gcm3, 5.3*gcm3, 1*gcm3) # density
     if asteroid_sma is None:
-        asteroid_sma = Measure(35*au, 50*au, 5*au)  # semi-major axis
+        asteroid_sma = single(2.5 * au) + Measure(35*au, 50*au, 5*au)  # semi-major axis
 
     # Ring
     if eccentricity is None:
