@@ -106,7 +106,7 @@ class Asteroid:
 
 
 class Star:
-    def __init__(self, magnitude: float, angular_radius: float):
+    def __init__(self, magnitude: float, angular_radius: float, std_dev: Union[float, Measure.Unit]) -> None:
         # Basic star parameters
         self.magnitude = magnitude # magnitude
         self.radius = angular_radius # angular radius
@@ -115,7 +115,7 @@ class Star:
         self.surface_brightness = self.magnitude / self.area # surface brightness
         self.illuminance = illuminance(magnitude) # illuminance
         self.brightness = self.illuminance / self.area # brightness
-        self.model = gaussian(to_pixels(self.radius*2)) # disk
+        self.model = gaussian(to_pixels(self.radius*2), std_dev=std_dev) # disk
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
         self.model = gaussian(size)

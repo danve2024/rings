@@ -72,9 +72,11 @@ def elliptical_ring(
     return arr
 
 
-def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None) -> np.array:
+def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None, std_dev: Union[float, Measure.Unit] = None) -> np.array:
     if size is None:
         size = diameter
+    if std_dev is None:
+        std_dev = diameter/3
 
     diameter = round(diameter)
     size = round(size)
@@ -83,7 +85,7 @@ def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Un
     x = np.linspace(-grid, grid, size)
     y = np.linspace(-grid, grid, size)
     xs, ys = np.meshgrid(x, y)
-    model = Gaussian2D(amplitude=1, x_mean=0, y_mean=0, x_stddev=diameter/3, y_stddev=diameter/3)(xs, ys)
+    model = Gaussian2D(amplitude=1, x_mean=0, y_mean=0, x_stddev=std_dev, y_stddev=std_dev)(xs, ys)
 
     return model
 

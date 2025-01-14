@@ -1,20 +1,23 @@
+from typing import Union
+
 class Measure:
-    def __init__(self, minimum: float, maximum: float, step: float):
-        self.min = self.Unit(minimum)
-        self.max = self.Unit(maximum)
-        self.delta = self.Unit(step)
+    def __init__(self, minimum: float, maximum: float, unit: Union[int, float] = 1, label: str = None):
+        self.min = self.Unit(minimum).set(unit)
+        self.max = self.Unit(maximum).set(unit)
+        self.unit = self.Unit(unit)
+        self.range = self.max - self.min
+        self.label = label
+        if self.label:
+            self.prefix = self.label + ': '
+        else:
+            self.prefix = ''
+        print(self)
 
-    def __iter__(self) -> iter:
-        return iter(self.min + k * self.delta for k in range((self.max - self.min) // self.delta))
+    def slider(self, value: int):
+        return self.min(self.unit) + self.range(self.unit) * (value / 100)
 
-    def __len__(self) -> int:
-        return (self.max - self.min)//self.delta
-
-    def __add__(self, other) -> list:
-        return list(self) + list(other)
-
-    def __radd__(self, other) -> list:
-        return list(other) + list(self)
+    def __str__(self):
+        return f'{self.prefix}measure({self.min}, {self.max}, {self.unit})'
 
     class Unit(float):
         def __add__(self, other):
@@ -53,5 +56,5 @@ class Measure:
         def __call__(self, n):
             return self/n
 
-def single(value: float) -> list[Measure.Unit]:
-    return [Measure.Unit(value)]
+        def set(self, n):
+            return self*n
