@@ -1,23 +1,128 @@
-import sys
 import time
+import sys
 
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton, QCheckBox, QLineEdit
 from PyQt6.QtCore import Qt
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 
-# Imports of user-defined modules
 from measure import Measure
 from units import *
 from formulas import *
 from space import Asteroid, Rings, Star, hill_sphere
 
-# Initialize the star
-star = Star(6.0 * mag, 0.8 * arcsec, None)
+from PyQt6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QGridLayout,
+    QLabel, QLineEdit, QCheckBox, QPushButton
+)
 
-class DynamicPlot(QWidget):
-    def __init__(self) -> None:
+class Selection(QWidget):
+    def __init__(self, default_values):
+        super().__init__()
+
+        self.default_values = default_values
+        self.user_values = {}
+
+        self.checkboxes = {}
+        self.mins = {}
+        self.maxs = {}
+
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QGridLayout()  # Use a grid layout for column alignment
+
+        # Set column headers
+        layout.addWidget(QLabel("Parameter"), 0, 0)
+        layout.addWidget(QLabel("Auto"), 0, 1)
+        layout.addWidget(QLabel("Manual"), 0, 2)
+        layout.addWidget(QLabel("Min"), 0, 3)
+        layout.addWidget(QLabel("Max"), 0, 4)
+
+        row = 1  # Start from the second row for parameters
+
+        for param, measure in self.default_values.items():
+            # Parameter Name Label
+            param_label = QLabel(param)
+            layout.addWidget(param_label, row, 0)
+
+            # Auto Checkbox (Default)
+            auto_cb = QCheckBox("Auto")
+            auto_cb.setChecked(True)  # Start with Auto checked
+            auto_cb.stateChanged.connect(lambda state, p=param: self.auto(state, p))
+            layout.addWidget(auto_cb, row, 1)
+
+            # Manual Checkbox
+            manual_cb = QCheckBox("Manual")
+            manual_cb.stateChanged.connect(lambda state, p=param: self.manual(state, p))
+            layout.addWidget(manual_cb, row, 2)
+
+            # Min and Max Input Fields
+            min_input = QLineEdit(str(measure.min(measure.unit)))
+            max_input = QLineEdit(str(measure.max(measure.unit)))
+            min_input.setEnabled(False)
+            max_input.setEnabled(False)
+            layout.addWidget(min_input, row, 3)
+            layout.addWidget(max_input, row, 4)
+
+            # Store references
+            self.checkboxes[param] = (auto_cb, manual_cb)
+            self.mins[param] = min_input
+            self.maxs[param] = max_input
+
+            row += 1  # Move to the next row for the next parameter
+
+        # Done Button
+        done_btn = QPushButton("Done")
+        done_btn.clicked.connect(self.click)  # Connect to close function
+        layout.addWidget(done_btn, row, 0, 1, 5)  # Span across all columns
+
+        self.setLayout(layout)
+        self.setWindowTitle("Parameter Selector")
+        self.show()
+
+    def auto(self, state, param):
+        if state == 2:  # Auto checked
+            self.checkboxes[param][1].setChecked(False)  # Uncheck Manual
+            self.mins[param].setEnabled(False)
+            self.maxs[param].setEnabled(False)
+        else:
+            # Prevent unchecking both checkboxes
+            if not self.checkboxes[param][1].isChecked():
+                self.checkboxes[param][0].setChecked(True)  # Re-check Auto
+
+    def manual(self, state, param):
+        if state == 2:  # Manual checked
+            self.checkboxes[param][0].setChecked(False)  # Uncheck Auto
+            self.mins[param].setEnabled(True)
+            self.maxs[param].setEnabled(True)
+        else:
+            # Prevent unchecking both checkboxes
+            if not self.checkboxes[param][0].isChecked():
+                self.checkboxes[param][1].setChecked(True)  # Re-check Manual
+
+    def click(self):
+        for param in self.default_values.keys():
+            measure = self.default_values[param]
+
+            if self.checkboxes[param][0].isChecked():  # Auto selected
+                # Use existing measure values without changes
+                self.user_values[param] = Measure(measure.min(measure.unit), measure.max(measure.unit), measure.unit, measure.label)
+
+            else:  # Manual selected
+                min_val = float(self.mins[param].text())
+                max_val = float(self.maxs[param].text())
+                # Create a new Measure object with user-defined min/max but keep unit and label from defaults
+                self.user_values[param] = Measure(min_val, max_val, measure.unit, measure.label)
+
+        # Close the window after clicking Done
+        self.close()
+
+
+
+class Model(QWidget):
+    def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.setWindowTitle("Asteroid with Rings Occultation Simulation")
         self.layout = QVBoxLayout()
@@ -28,16 +133,7 @@ class DynamicPlot(QWidget):
 
 
         # Default parameters
-        self.defaults = {
-            'radius': Measure(1, 21, km, label='R'),
-            'density': Measure(1.3, 5.3, gcm3, label='D'),
-            'ring_density': Measure(0.01, 0.03, gcm3, label='d'),
-            'asteroid_sma': Measure(2.5, 50, au, label='A'),
-            'sma': Measure(10, 1000, km, label='?a'),  # Dependent slider
-            'ring_mass': Measure(0.1, 10, kg, label='?m'),           # Dependent slider
-            'eccentricity': Measure(0, 0.8, label='e'),
-            'inclination': Measure(0, 90, deg, label='i')
-        }
+        self.defaults = parameters
 
         # Create sliders
         for key, measure in self.defaults.items():
@@ -87,7 +183,8 @@ class DynamicPlot(QWidget):
             'sma': 'km',
             'ring_mass': 'kg',
             'eccentricity': '',
-            'inclination': 'deg'
+            'inclination': 'deg',
+            'std_dev': ''
         }
         return units.get(name, '')
 
@@ -122,7 +219,6 @@ class DynamicPlot(QWidget):
         density = params['density'].set(gcm3)
         ring_density = params['ring_density'].set(gcm3)
         asteroid_sma = params['asteroid_sma'].set(au)
-        ring_mass = params['ring_mass'].set(kg)
         sma = params['sma'].set(km)
 
         V = volume(radius) # asteroid volume
@@ -136,7 +232,12 @@ class DynamicPlot(QWidget):
         self.defaults['ring_mass'] = Measure(m_min, m_max, kg, label='m')
 
     @staticmethod
-    def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit, asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit, eccentricity: Measure.Unit, inclination: Measure.Unit) -> tuple:
+    def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit, asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit, eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
+        # Star initialization
+        magnitude = 6.0 * mag
+        angular_size = 0.8 * arcsec
+        star = Star(magnitude, angular_size, std_dev)
+
         radius = radius.set(km)
         density = density.set(gcm3)
         ring_density = ring_density.set(gcm3)
@@ -153,8 +254,5 @@ class DynamicPlot(QWidget):
         occultation_duration = data[0]
         return data, occultation_duration
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = DynamicPlot()
-    window.show()
-    sys.exit(app.exec())
+
+app = QApplication(sys.argv)
