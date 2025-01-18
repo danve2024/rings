@@ -1,8 +1,11 @@
 import time
 import sys
+import traceback
 
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton, QCheckBox, QLineEdit
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton, QCheckBox, \
+    QLineEdit, QDialog, QMessageBox
+from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtGui import QPixmap
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
@@ -11,11 +14,13 @@ from measure import Measure
 from units import *
 from formulas import *
 from space import Asteroid, Rings, Star, hill_sphere
+from models import cover_animation
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QGridLayout,
-    QLabel, QLineEdit, QCheckBox, QPushButton
+    QLabel, QLineEdit, QCheckBox, QPushButton, QDialog
 )
+
 
 class Selection(QWidget):
     def __init__(self, default_values):
@@ -108,7 +113,8 @@ class Selection(QWidget):
 
             if self.checkboxes[param][0].isChecked():  # Auto selected
                 # Use existing measure values without changes
-                self.user_values[param] = Measure(measure.min(measure.unit), measure.max(measure.unit), measure.unit, measure.label)
+                self.user_values[param] = Measure(measure.min(measure.unit), measure.max(measure.unit), measure.unit,
+                                                  measure.label)
 
             else:  # Manual selected
                 min_val = float(self.mins[param].text())
@@ -120,7 +126,6 @@ class Selection(QWidget):
         self.close()
 
 
-
 class Model(QWidget):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
@@ -130,7 +135,6 @@ class Model(QWidget):
 
         self.sliders = {}
         self.slider_labels = {}
-
 
         # Default parameters
         self.defaults = parameters
@@ -151,6 +155,11 @@ class Model(QWidget):
         # Occultation duration label
         self.eclipse_label = QLabel("Occultation duration: 0.0 sec")
         self.layout.addWidget(self.eclipse_label)
+
+        # Show animation button
+        self.animation_button = QPushButton("Simulate Occultation Animation")
+        self.animation_button.clicked.connect(self.show_animation_window)
+        self.layout.addWidget(self.animation_button, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.update_plot()
 
@@ -199,15 +208,20 @@ class Model(QWidget):
 
         self.update_dependent_sliders(params)
 
-        data, occultation_duration = self.calculate_data(**params)
+        data, occultation_duration, self.star, self.asteroid = self.calculate_data(**params)
 
         self.ax.clear()
+        self.ax.set_title("Simulation Result")
+
         if len(data[1]) > 2:
             x, y = zip(*data[1])
             self.ax.plot(x, y)
         else:
             self.ax.plot([0, 1], [0, 0])
-        self.ax.set_title("Simulation Result")
+
+        self.ax.invert_yaxis()
+        self.ax.set_xlabel("Phase")
+        self.ax.set_ylabel("Magnitude Change")
         self.canvas.draw()
 
         elapsed_time = time.time() - start_time
@@ -221,18 +235,20 @@ class Model(QWidget):
         asteroid_sma = params['asteroid_sma'].set(au)
         sma = params['sma'].set(km)
 
-        V = volume(radius) # asteroid volume
-        M = V * density    # asteroid mass
-        a_min = max(roche_limit(radius, density, ring_density), radius) # semi-major axis minimum
-        a_max = hill_sphere(asteroid_sma, M) # semi-major axis maximum
+        V = volume(radius)  # asteroid volume
+        M = V * density  # asteroid mass
+        a_min = max(roche_limit(radius, density, ring_density), radius)  # semi-major axis minimum
+        a_max = hill_sphere(asteroid_sma, M)  # semi-major axis maximum
         self.defaults['sma'] = Measure(a_min, a_max, km, label='a')
 
         m_max = maximum_ring_mass(M, radius, sma)  # ring mass maximum
-        m_min = 0.5 * m_max # ring mass minimum
+        m_min = 0.5 * m_max  # ring mass minimum
         self.defaults['ring_mass'] = Measure(m_min, m_max, kg, label='m')
 
     @staticmethod
-    def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit, asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit, eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
+    def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit,
+                       asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit,
+                       eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
         # Star initialization
         magnitude = 6.0 * mag
         angular_size = 0.8 * arcsec
@@ -246,13 +262,60 @@ class Model(QWidget):
         ring_mass = ring_mass.set(kg)
         inclination = inclination.set(deg)
 
-        V = volume(radius) # asteroid volume
-        M = V * density    # asteroid mass
+        V = volume(radius)  # asteroid volume
+        M = V * density  # asteroid mass
         rings = Rings(ring_density, sma, ring_mass, eccentricity, inclination)  # create rings
-        asteroid = Asteroid(rings, radius, density, asteroid_sma, V, M)         # create asteroid
+        asteroid = Asteroid(rings, radius, density, asteroid_sma, V, M)  # create asteroid
         data = star.occultation(asteroid)
         occultation_duration = data[0]
-        return data, occultation_duration
+
+        return data, occultation_duration, star, asteroid
+
+    def show_animation_window(self):
+        """Open the animation window with error handling."""
+        try:
+            if hasattr(self, 'star') and hasattr(self, 'asteroid'):
+                animation_window = AnimationWindow(self.star, self.asteroid, self)
+                animation_window.exec()
+            else:
+                QMessageBox.warning(self, "Warning", "Please update the plot before running the animation.")
+        except Exception as e:
+            print("Error during animation:", e)
+            traceback.print_exc()
+
+
+class AnimationWindow(QDialog):
+    def __init__(self, star, asteroid, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Asteroid Ring Occultation Simulation")
+        self.setModal(True)
+        self.resize(600, 600)
+
+        self.layout = QVBoxLayout()
+        self.label = QLabel()
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.label)
+        self.setLayout(self.layout)
+
+        self.frames = cover_animation(star.model, asteroid.model)  # Generate frames
+        self.current_frame_index = 0
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_frame)
+        self.timer.start(66)  # ~15 FPS
+
+    def update_frame(self):
+        """Update the animation frame safely."""
+        if not self.frames:
+            return  # Avoid update if frames are missing
+
+        frame = self.frames[self.current_frame_index]
+        if frame.isNull():
+            return  # Skip invalid frames
+
+        pixmap = QPixmap.fromImage(frame)
+        self.label.setPixmap(pixmap)
+        self.current_frame_index = (self.current_frame_index + 1) % len(self.frames)
 
 
 app = QApplication(sys.argv)

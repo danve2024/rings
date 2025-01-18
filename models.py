@@ -1,11 +1,12 @@
+from PyQt6.QtGui import QImage
+import matplotlib.pyplot as plt
 import numpy as np
+from astropy.modeling.models import Gaussian2D
+from math import sin, cos, sqrt, radians
 
 from formulas import format_data
 from measure import Measure
 from typing import Union
-from astropy.modeling.models import Gaussian2D
-import matplotlib.pyplot as plt
-from math import sin, cos, sqrt, radians
 
 
 def disk(radius: float, size: float = None) -> np.ndarray:
@@ -23,14 +24,14 @@ def disk(radius: float, size: float = None) -> np.ndarray:
 
 
 def elliptical_ring(
-    size: Union[float, Measure.Unit], 
-    a: Union[float, Measure.Unit], 
-    e: Union[float, Measure.Unit], 
-    w: Union[float, Measure.Unit], 
-    i: Union[float, Measure.Unit],
-    fill: float, 
-    rotation_angle: Union[float, Measure.Unit] = 90,
-    focus: tuple = None) -> np.array:
+        size: Union[float, Measure.Unit],
+        a: Union[float, Measure.Unit],
+        e: Union[float, Measure.Unit],
+        w: Union[float, Measure.Unit],
+        i: Union[float, Measure.Unit],
+        fill: float,
+        rotation_angle: Union[float, Measure.Unit] = 90,
+        focus: tuple = None) -> np.array:
     size = int(round(size))
     shape = (size, size)
     a = float(a)
@@ -43,7 +44,7 @@ def elliptical_ring(
     c = e * a
     b0 = sqrt(a ** 2 - c ** 2)
     b = b0 * sin(radians(i))
-    
+
     y, x = np.ogrid[:size, :size]
 
     x_centered = x - fx
@@ -72,11 +73,12 @@ def elliptical_ring(
     return arr
 
 
-def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None, std_dev: Union[float, Measure.Unit] = None) -> np.array:
+def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None,
+             std_dev: Union[float, Measure.Unit] = None) -> np.array:
     if size is None:
         size = diameter
     if std_dev is None:
-        std_dev = diameter/3
+        std_dev = diameter / 3
 
     diameter = round(diameter)
     size = round(size)
@@ -152,7 +154,64 @@ def show_model(model: np.ndarray) -> None:
     plt.colorbar()
     plt.show()
 
+def cover_animation(star: np.array, asteroid: np.array) -> list:
+    """
+    Generates frames for the asteroid ring occultation animation, preserving the original logic.
+
+    Args:
+        star: 2D NumPy array representing the star's brightness distribution.
+        asteroid: 2D NumPy array representing the asteroid's mask.
+
+    Returns:
+        List of QImage frames for animation.
+    """
+    frames = []
+    grid = (len(star), len(star[0]))
+
+    # Phase 1: Decreasing mask size
+    for i in range(len(star) - 1, 0, -1):
+        mask = crop(asteroid, i, True)
+        if np.count_nonzero(mask) != 0:
+            result = np.zeros(grid)
+            for x in range(len(star)):
+                for y in range(len(star[0])):
+                    result[x][y] = max(0, star[x][y] - mask[x][y])
+            frame = _array_to_qimage(result)
+            frames.append(frame)
+
+    # Phase 2: Increasing mask size
+    for i in range(len(star)):
+        mask = crop(asteroid, i)
+        if np.count_nonzero(mask) != 0:
+            result = np.zeros(grid)
+            for x in range(len(star)):
+                for y in range(len(star[0])):
+                    result[x][y] = max(0, star[x][y] - mask[x][y])
+            frame = _array_to_qimage(result)
+            frames.append(frame)
+
+    return frames
+
+
+def _array_to_qimage(array: np.array) -> QImage:
+    """
+    Converts a 2D NumPy array to a QImage for animation display.
+
+    Args:
+        array: 2D NumPy array.
+
+    Returns:
+        QImage representing the array as a grayscale image.
+    """
+    # Normalize array to 0-255
+    normalized = (array - np.min(array)) / (np.max(array) - np.min(array) + 1e-8) * 255
+    img_array = normalized.astype(np.uint8)
+    height, width = img_array.shape
+
+    # Create QImage with a copy to avoid segmentation fault
+    return QImage(img_array.data, width, height, width, QImage.Format.Format_Grayscale8).copy()
+
 
 if __name__ == '__main__':
-    print(cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 5, 0.3, 1, 30, 0.5))))
+    print(cover(gaussian(20), normalize(disk(3, 20) + elliptical_ring(20, 9, 0.3, 1, 30, 0.5))))
 

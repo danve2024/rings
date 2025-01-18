@@ -1,7 +1,7 @@
 from typing import Union
 
 class Measure:
-    def __init__(self, minimum: float, maximum: float, unit: Union[int, float] = 1, label: str = None):
+    def __init__(self, minimum: float, maximum: float, unit: Union[int, float] = 1, label: str = None, print_values=False):
         self.min = self.Unit(minimum).set(unit)
         self.max = self.Unit(maximum).set(unit)
         self.unit = self.Unit(unit)
@@ -11,7 +11,8 @@ class Measure:
             self.prefix = self.label + ': '
         else:
             self.prefix = ''
-        print(self)
+        if print_values:
+            print(self)
 
     def slider(self, value: int):
         return self.min(self.unit) + self.range(self.unit) * (value / 100)
