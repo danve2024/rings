@@ -239,11 +239,11 @@ class Model(QWidget):
         M = V * density  # asteroid mass
         a_min = max(roche_limit(radius, density, ring_density), radius)  # semi-major axis minimum
         a_max = hill_sphere(asteroid_sma, M)  # semi-major axis maximum
-        self.defaults['sma'] = Measure(a_min, a_max, km, label='a')
+        self.defaults['sma'].update(a_min, a_max)
 
         m_max = maximum_ring_mass(M, radius, sma)  # ring mass maximum
         m_min = 0.5 * m_max  # ring mass minimum
-        self.defaults['ring_mass'] = Measure(m_min, m_max, kg, label='m')
+        self.defaults['ring_mass'].update(m_min, m_max)
 
     @staticmethod
     def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit,

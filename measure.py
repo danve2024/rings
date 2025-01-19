@@ -17,6 +17,9 @@ class Measure:
     def slider(self, value: int):
         return self.min(self.unit) + self.range(self.unit) * (value / 100)
 
+    def update(self, minimum: float, maximum: float):
+        self.__init__(minimum, maximum, self.unit, self.label)
+
     def __str__(self):
         return f'{self.prefix}measure({self.min}, {self.max}, {self.unit})'
 
