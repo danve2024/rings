@@ -23,6 +23,9 @@ from PyQt6.QtWidgets import (
 
 
 class Selection(QWidget):
+    """
+    A widget to select and configure parameters for the simulation.
+    """
     def __init__(self, default_values):
         super().__init__()
 
@@ -88,6 +91,7 @@ class Selection(QWidget):
         self.show()
 
     def auto(self, state, param):
+        """Auto select parameter"""
         if state == 2:  # Auto checked
             self.checkboxes[param][1].setChecked(False)  # Uncheck Manual
             self.mins[param].setEnabled(False)
@@ -98,6 +102,7 @@ class Selection(QWidget):
                 self.checkboxes[param][0].setChecked(True)  # Re-check Auto
 
     def manual(self, state, param):
+        """Manually set the parameter values."""
         if state == 2:  # Manual checked
             self.checkboxes[param][0].setChecked(False)  # Uncheck Auto
             self.mins[param].setEnabled(True)
@@ -108,6 +113,7 @@ class Selection(QWidget):
                 self.checkboxes[param][1].setChecked(True)  # Re-check Manual
 
     def click(self):
+        """Close the window and store user-defined parameter values."""
         for param in self.default_values.keys():
             measure = self.default_values[param]
 
@@ -127,6 +133,9 @@ class Selection(QWidget):
 
 
 class Model(QWidget):
+    """
+    A widget to display the simulation model and control parameters sliders.
+    """
     def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.setWindowTitle("Asteroid with Rings Occultation Simulation")
@@ -164,6 +173,7 @@ class Model(QWidget):
         self.update_plot()
 
     def create_slider(self, name, measure):
+        """Create a slider"""
         container = QHBoxLayout()
         unit = self.get_unit_label(name)
         label = QLabel(f"{name.capitalize()} ({unit}):")
@@ -184,11 +194,12 @@ class Model(QWidget):
 
     @staticmethod
     def get_unit_label(name: str) -> str:
+        """Get the unit label for a given parameter"""
         units = {
             'radius': 'km',
             'density': 'g/cm³',
             'ring_density': 'g/cm³',
-            'asteroid_sma': 'AU',
+            'asteroid_sma': 'au',
             'sma': 'km',
             'ring_mass': 'kg',
             'eccentricity': '',
@@ -198,6 +209,7 @@ class Model(QWidget):
         return units.get(name, '')
 
     def update_plot(self) -> None:
+        """Update the plot based on the current slider values"""
         start_time = time.time()
 
         params = {}
@@ -229,6 +241,7 @@ class Model(QWidget):
         self.eclipse_label.setText(f"Occultation duration: {occultation_duration:.2f} sec")
 
     def update_dependent_sliders(self, params: dict) -> None:
+        """Update the dependent sliders (ring mass and semi-major axis)"""
         radius = params['radius'].set(km)
         density = params['density'].set(gcm3)
         ring_density = params['ring_density'].set(gcm3)
@@ -249,11 +262,13 @@ class Model(QWidget):
     def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit,
                        asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit,
                        eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
+        """Calculate the simulation data"""
         # Star initialization
         magnitude = 6.0 * mag
         angular_size = 0.8 * arcsec
         star = Star(magnitude, angular_size, std_dev)
 
+        # Parameters
         radius = radius.set(km)
         density = density.set(gcm3)
         ring_density = ring_density.set(gcm3)
@@ -262,6 +277,7 @@ class Model(QWidget):
         ring_mass = ring_mass.set(kg)
         inclination = inclination.set(deg)
 
+        # Create asteroid and calculate simulation data
         V = volume(radius)  # asteroid volume
         M = V * density  # asteroid mass
         rings = Rings(ring_density, sma, ring_mass, eccentricity, inclination)  # create rings
@@ -285,6 +301,7 @@ class Model(QWidget):
 
 
 class AnimationWindow(QDialog):
+    """Occultation animation window (opened using the "Show occultation animation" window)"""
     def __init__(self, star, asteroid, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Asteroid Ring Occultation Simulation")

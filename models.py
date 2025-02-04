@@ -8,8 +8,22 @@ from formulas import format_data
 from measure import Measure
 from typing import Union
 
+"""
+Uses numpy arrays to model the event of the occultation
+
+0 - minimum matrix pixel brightness
+1 - maximum matrix pixel brightness
+"""
+
 
 def disk(radius: float, size: float = None) -> np.ndarray:
+    """
+    Draws a disk of specified radius
+
+    :param radius: disk radius (in pixel units)
+    :param size: matrix size (used for matrix concatenation)
+    :return: numpy array with a disk of specified radius
+    """
     if size is None:
         size = 2 * radius + 1
     size = int(round(size))
@@ -32,6 +46,19 @@ def elliptical_ring(
         fill: float,
         rotation_angle: Union[float, Measure.Unit] = 90,
         focus: tuple = None) -> np.array:
+    """
+    Draws an elliptical ring of specified parameters
+
+    :param size: matrix size (used for matrix concatenation)
+    :param a: ring semi-major axis (in pixel units)
+    :param e: ring eccentricity
+    :param w: ring width (in pixel units)
+    :param i: ring inclination (in degrees)
+    :param fill: ring fill percentage (depends on the absorption coefficient)
+    :param rotation_angle: rotation angle (in degrees)
+    :param focus: focus coordinates of the ring (in pixel units)
+    :return: numpy array with an elliptical ring of specified parameters
+    """
     size = int(round(size))
     shape = (size, size)
     a = float(a)
@@ -75,6 +102,16 @@ def elliptical_ring(
 
 def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Unit] = None,
              std_dev: Union[float, Measure.Unit] = None) -> np.array:
+    """
+    Will be replaced with Moffat distribution for applying to the star's physical parameters (T, log(g))!
+
+    Draws a Gaussian star model of specified diameter
+
+    :param diameter: disk diameter (in pixel units)
+    :param size: matrix size (used for matrix concatenation)
+    :param std_dev: standard deviation of the Gaussian distribution (in pixel units)
+    :return: numpy array with a Gaussian star model of specified diameter
+    """
     if size is None:
         size = diameter
     if std_dev is None:
@@ -92,7 +129,17 @@ def gaussian(diameter: Union[float, Measure.Unit], size: Union[float, Measure.Un
     return model
 
 
+
 def crop(array: np.array, rows: int, end: bool = False) -> np.array:
+    """
+    Crops the given array to the specified number of rows. Used for modeling the occultation stages.
+
+    :param np.array array: numpy array to be cropped
+    :param int rows: number of rows to crop
+    :param bool end: if True, the cropped array will start from the end
+    :return: cropped array
+    """
+
     if array.size == 0:
         return np.array([])
     if rows > array.shape[0]:
@@ -110,10 +157,19 @@ def crop(array: np.array, rows: int, end: bool = False) -> np.array:
 
 
 def cover(star: np.array, asteroid: np.array) -> list:
+    """
+    Models the occultation by masking the star array with the array of the asteroid with rings
+
+    :param np.array star: the array of the star covered
+    :param np.array asteroid: the array of the covering asteroid with its rings
+    :return: the list of data used for drawing a lightcurve
+    """
+
     data = []
     grid = (len(star), len(star[0]))
-    initial_area = np.sum(star)
+    initial_area = np.sum(star) # calculating initial illuminance
 
+    # Phase 1: Decreasing mask size
     for i in range(len(star) - 1, 0, -1):
         mask = crop(asteroid, i, True)
         if np.count_nonzero(mask) != 0:
@@ -121,10 +177,11 @@ def cover(star: np.array, asteroid: np.array) -> list:
             for x in range(len(star)):
                 for y in range(len(star[0])):
                     result[x][y] = max(0, star[x][y] - mask[x][y])
-            area = np.sum(result)
-            data.append(float(area))
+            area = np.sum(result) # calculating the sum of illuminance from each pixel - Ii
+            data.append(float(area)) # adding Ii to the output array
             # show_model(result)
 
+    # Phase 2: Increasing mask size
     for i in range(len(star)):
         mask = crop(asteroid, i)
         if np.count_nonzero(mask) != 0:
@@ -132,16 +189,22 @@ def cover(star: np.array, asteroid: np.array) -> list:
             for x in range(len(star)):
                 for y in range(len(star[0])):
                     result[x][y] = max(0, star[x][y] - mask[x][y])
-            area = np.sum(result)
-            data.append(float(area))
+            area = np.sum(result)  # calculating the sum of illuminance from each pixel - Ii
+            data.append(float(area))  # adding Ii to the output array
             # show_model(result)
 
     data.insert(0, initial_area)
     data.append(initial_area)
 
-    return format_data(data)
+    return format_data(data) # [I1, I2, ..., Ii] -> [(Φ1, Δm1), (Φ2, Δm2), ..., (Φi, Δmi)]
 
 def normalize(array: np.array) -> np.array:
+    """
+    Normalizes the given array to the range [0, 1]
+
+    :param np.array array: the array to normalize
+    :return: normalized array
+    """
     for x in range(len(array)):
         for y in range(len(array[0])):
             if array[x][y] > 1:
@@ -149,6 +212,11 @@ def normalize(array: np.array) -> np.array:
     return array
 
 def show_model(model: np.ndarray) -> None:
+    """
+    Shows the given model as an image using matplotlib
+
+    :param np.ndarray model: the model to show
+    """
     plt.figure()
     plt.imshow(model, origin='lower', cmap='viridis')
     plt.colorbar()
@@ -158,12 +226,9 @@ def cover_animation(star: np.array, asteroid: np.array) -> list:
     """
     Generates frames for the asteroid ring occultation animation, preserving the original logic.
 
-    Args:
-        star: 2D NumPy array representing the star's brightness distribution.
-        asteroid: 2D NumPy array representing the asteroid's mask.
-
-    Returns:
-        List of QImage frames for animation.
+    :param np.array star: the array of the star covered
+    :param np.array asteroid: the array of the covering asteroid with its rings
+    :return: list of QImage frames for animation
     """
     frames = []
     grid = (len(star), len(star[0]))
@@ -195,13 +260,10 @@ def cover_animation(star: np.array, asteroid: np.array) -> list:
 
 def _array_to_qimage(array: np.array) -> QImage:
     """
-    Converts a 2D NumPy array to a QImage for animation display.
+    Converts a 2D numpy array to a QImage for animation display.
 
-    Args:
-        array: 2D NumPy array.
-
-    Returns:
-        QImage representing the array as a grayscale image.
+    :param np.array array: array to convert
+    :return: QImage representing the array as a grayscale image.
     """
     # Normalize array to 0-255
     normalized = (array - np.min(array)) / (np.max(array) - np.min(array) + 1e-8) * 255
