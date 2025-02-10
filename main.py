@@ -18,9 +18,9 @@ Automatic values:
         a: semi-major axis (dependent on other parameters)
         m: mass (dependent on other parameters)
     Star:
-        s: Gaussian model standard deviation (will be replaced with T and log(g))
-        T: temperature (will be included)
-        log(g): logarithmic surface gravity (will be included)
+        T: temperature
+        log(g): logarithmic surface gravity
+        λ: wavelength
 ! To change any parameters ranges use the window opened by the program or the Measure class
 """
 

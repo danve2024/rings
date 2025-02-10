@@ -20,3 +20,5 @@ minute = 60*s
 hrs = 60*minute
 days = 24*hrs
 yrs = 365.24219*days
+K = 1
+angstrom = 10**(-10) * m

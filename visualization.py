@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSl
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QPixmap
 import matplotlib.pyplot as plt
+from astropy.units import temperature
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 
@@ -263,11 +264,6 @@ class Model(QWidget):
                        asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit,
                        eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
         """Calculate the simulation data"""
-        # Star initialization
-        magnitude = 6.0 * mag
-        angular_size = 0.8 * arcsec
-        star = Star(magnitude, angular_size, std_dev)
-
         # Parameters
         radius = radius.set(km)
         density = density.set(gcm3)
@@ -282,6 +278,12 @@ class Model(QWidget):
         M = V * density  # asteroid mass
         rings = Rings(ring_density, sma, ring_mass, eccentricity, inclination)  # create rings
         asteroid = Asteroid(rings, radius, density, asteroid_sma, V, M)  # create asteroid
+
+        # Star initialization
+        angular_size = 0.8 * arcsec
+        apsis = asteroid.rings.angular_sma * (1 + asteroid.rings.eccentricity) # apsis: Q = a(1+e)
+        star = Star(2 * apsis, angular_size)
+
         data = star.occultation(asteroid)
         occultation_duration = data[0]
 
