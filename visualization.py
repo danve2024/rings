@@ -247,17 +247,18 @@ class Model(QWidget):
         density = params['density'].set(gcm3)
         ring_density = params['ring_density'].set(gcm3)
         asteroid_sma = params['asteroid_sma'].set(au)
-        sma = params['sma'].set(km)
 
         V = volume(radius)  # asteroid volume
         M = V * density  # asteroid mass
         a_min = max(roche_limit(radius, density, ring_density), radius)  # semi-major axis minimum
-        a_max = hill_sphere(asteroid_sma, M)  # semi-major axis maximum
-        self.defaults['sma'].update(a_min, a_max)
+        # a_max = a_min * 10
+        a_max = hill_sphere(asteroid_sma, M)
+        self.defaults['sma'].update(a_min / km, a_max / km)
+        sma = params['sma'].set(km)
 
         m_max = maximum_ring_mass(M, radius, sma)  # ring mass maximum
         m_min = 0.5 * m_max  # ring mass minimum
-        self.defaults['ring_mass'].update(m_min, m_max)
+        self.defaults['ring_mass'].update(m_min / kg, m_max / kg)
 
     @staticmethod
     def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit,

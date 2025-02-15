@@ -161,6 +161,11 @@ def star_model(shape: list[int], coefficients: list[float]) -> np.array:
     m, n = shape
     c, d = coefficients
 
+    if m == 0:
+        return np.zeros((1, 1))
+    if n == 0:
+        return np.zeros((1, 1))
+
     if m % 2 == 0:
         m -= 1
 

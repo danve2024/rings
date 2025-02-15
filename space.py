@@ -128,10 +128,10 @@ def hill_sphere(asteroid_semi_major_axis: Union[float, Measure.Unit], asteroid_m
 
 def illuminance(magnitude: Union[float, Measure.Unit]) -> Union[float, Measure]:
     """
-    Converts visible magnitude to illuminance.
-    E = 10^(0.4(m_Sun - m0))
+    Converts apparent magnitude to illuminance.
+    E = E_Sun * 10^(0.4(m_Sun - m0))
 
-    :param magnitude: m0 - body visible magnitude
+    :param magnitude: m0 - body apparent magnitude
     :return: E - illuminance
     """
     return sun.illuminance * 10 ** (0.4 * (sun.magnitude - magnitude))
