@@ -429,5 +429,5 @@ def _array_to_qimage(array: np.array) -> QImage:
 
 
 if __name__ == '__main__':
-    cover(star_model([10, 100], [0.933, 0.922]), disk(5), 500)
+    show_model(elliptical_ring(100, 20, 0.5, 10, 90, 1))
 

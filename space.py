@@ -208,7 +208,7 @@ class Rings:
     """
     A class for the rings model.
     """
-    def __init__(self, density: Measure.Unit, sma: Measure.Unit, mass: Measure.Unit, eccentricity: Measure.Unit, inclination: Measure.Unit):
+    def __init__(self, density: Measure.Unit, sma: Measure.Unit, width: Measure.Unit, mass: Measure.Unit, eccentricity: Measure.Unit, inclination: Measure.Unit):
         # Ring parameters
         self.density = density # density
         self.sma = sma # semi-major axis
@@ -216,7 +216,7 @@ class Rings:
         self.eccentricity = eccentricity # eccentricity
         self.inclination = inclination # inclination
         self.volume = self.mass / self.density # volume
-        self.width = ring_width(self.volume, self.sma, self.eccentricity)
+        self.width = width # width
 
         # For calculating the ring transparency
         self.mass_specific_absorption_coefficient = 2.3 * 10 ** (-3) * (m**2/g) # mass-specific absorption coefficient for silicate dust with quartz dominating
@@ -247,10 +247,10 @@ class Rings:
 
         :param size: matrix size (used for matrices concatenation)
         """
-        self.model = elliptical_ring(size, to_pixels(self.angular_sma), self.eccentricity, to_pixels(self.width), self.inclination, self.absorption)
+        self.model = elliptical_ring(size, to_pixels(self.angular_sma), self.eccentricity, to_pixels(self.angular_width), self.inclination, self.absorption)
 
     def __str__(self) -> str:
-        return f'rings(d:{self.density(gcm3)}g/cm3, a:{self.sma(km)}km, m:{self.mass(kg)}kg, e:{self.eccentricity}, i:{self.inclination(deg)}°)'
+        return f'rings(d:{self.density(gcm3)}g/cm3, a:{self.sma(km)}km, w: {self.width(km)}km, m:{self.mass(kg)}kg, e:{self.eccentricity}, i:{self.inclination(deg)}°)'
 
 
 class Asteroid:

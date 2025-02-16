@@ -31,10 +31,10 @@ defaults = {
             'ring_density': Measure(0.01, 0.03, gcm3, label='d'),
             'asteroid_sma': Measure(2.5, 50, au, label='A'),
             'sma': Measure(10, 1000, km, label='a'),  # Dependent slider
+            'width': Measure(0.1, 20, km, label='w'), # Dependent slider
             'ring_mass': Measure(0.1, 10, kg, label='m'), # Dependent slider
             'eccentricity': Measure(0, 0.8, label='e'),
             'inclination': Measure(0, 90, deg, label='i'),
-            'std_dev': Measure(0.1, 1, label='s')
         }
 
 # Graphics

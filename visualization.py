@@ -202,10 +202,10 @@ class Model(QWidget):
             'ring_density': 'g/cm³',
             'asteroid_sma': 'au',
             'sma': 'km',
+            'width': 'km',
             'ring_mass': 'kg',
             'eccentricity': '',
             'inclination': 'deg',
-            'std_dev': ''
         }
         return units.get(name, '')
 
@@ -256,14 +256,17 @@ class Model(QWidget):
         self.defaults['sma'].update(a_min / km, a_max / km)
         sma = params['sma'].set(km)
 
+        w_max = min(a_max - a_min, sma / 2) # ring width maximum
+        self.defaults['width'].update(10, w_max / km)
+
         m_max = maximum_ring_mass(M, radius, sma)  # ring mass maximum
         m_min = 0.5 * m_max  # ring mass minimum
         self.defaults['ring_mass'].update(m_min / kg, m_max / kg)
 
     @staticmethod
     def calculate_data(radius: Measure.Unit, density: Measure.Unit, ring_density: Measure.Unit,
-                       asteroid_sma: Measure.Unit, sma: Measure.Unit, ring_mass: Measure.Unit,
-                       eccentricity: Measure.Unit, inclination: Measure.Unit, std_dev: Measure.Unit) -> tuple:
+                       asteroid_sma: Measure.Unit, sma: Measure.Unit, width: Measure.Unit, ring_mass: Measure.Unit,
+                       eccentricity: Measure.Unit, inclination: Measure.Unit) -> tuple:
         """Calculate the simulation data"""
         # Parameters
         radius = radius.set(km)
@@ -271,13 +274,14 @@ class Model(QWidget):
         ring_density = ring_density.set(gcm3)
         asteroid_sma = asteroid_sma.set(au)
         sma = sma.set(km)
+        width = width.set(km)
         ring_mass = ring_mass.set(kg)
         inclination = inclination.set(deg)
 
         # Create asteroid and calculate simulation data
         V = volume(radius)  # asteroid volume
         M = V * density  # asteroid mass
-        rings = Rings(ring_density, sma, ring_mass, eccentricity, inclination)  # create rings
+        rings = Rings(ring_density, sma, width, ring_mass, eccentricity, inclination)  # create rings
         asteroid = Asteroid(rings, radius, density, asteroid_sma, V, M)  # create asteroid
 
         # Star initialization
