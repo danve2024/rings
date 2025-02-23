@@ -14,7 +14,7 @@ Supervisor: S.N.Kolyakina
 
 Subject advisors: E.O.Dedov, A.A.Vakhonin
 
-## Project perspectives
+## Project prospects
 
 ### Future use of the project
 My programs and synthetic lightcurve of the event will help professional and hobby astronomers to identify an asteroid with rings when analyzing a section of the sky.

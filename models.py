@@ -30,17 +30,17 @@ def disk(radius: float, size: float = None) -> np.ndarray:
         size = 2 * radius + 1
     size = int(round(size))
     if size == 0:
-        return np.zeros((1, 1))
+        return np.ones((1, 1))
     if size % 2 == 0:
         size -= 1
 
     center = (size - 1) / 2.0
 
-    ans = np.zeros((size, size), dtype=float)
+    ans = np.ones((size, size), dtype=float)
     y, x = np.ogrid[:size, :size]
 
     mask = (x - center) ** 2 + (y - center) ** 2 <= radius ** 2
-    ans[mask] = 1
+    ans[mask] = 0
     return ans
 
 
@@ -70,7 +70,7 @@ def elliptical_ring(
     size = int(round(size))
 
     if size == 0:
-        return np.zeros((1, 1))
+        return np.ones((1, 1))
 
     if size % 2 == 0:
         size -= 1
@@ -109,8 +109,8 @@ def elliptical_ring(
         inner_mask = (x_rot / a_inner) ** 2 + (y_rot / b_inner) ** 2 <= 1
     ring_mask = outer_mask & ~inner_mask
 
-    arr = np.zeros(shape, dtype=float)
-    arr[ring_mask] = fill
+    arr = np.ones(shape, dtype=float)
+    arr[ring_mask] = 1 - fill
 
     return arr
 
@@ -154,7 +154,6 @@ def star_model(shape: list[int], coefficients: list[float]) -> np.array:
 
     :param shape: shape of the star model (m x n)
     :param coefficients: coefficients of the star model (c, d)
-    :param angular_size: angular radius of the star
     :return: star model as a numpy array
     """
 
@@ -304,7 +303,7 @@ def cover(star: np.array, mask: np.array, initial: float) -> list:
 
         # Apply the mask with max(0, star[x][y] - mask[x][y])
         result[overlap_start:overlap_end, :] = np.maximum(
-            0, star[overlap_start:overlap_end, :] - mask[cover_start:cover_end, :]
+            0, star[overlap_start:overlap_end, :] * mask[cover_start:cover_end, :]
         )
 
         # show_model(result)
@@ -326,8 +325,9 @@ def normalize(array: np.array) -> np.array:
     """
     for x in range(len(array)):
         for y in range(len(array[0])):
-            if array[x][y] > 1:
-                array[x][y] = 1
+            array[x][y] -= 1
+            if array[x][y] < 0:
+                array[x][y] = 0
     return array
 
 def show_model(model: np.ndarray) -> None:
@@ -405,7 +405,7 @@ def cover_animation(star: np.array, mask: np.array) -> list:
 
         # Apply the mask with max(0, star[x][y] - mask[x][y])
         result[overlap_start:overlap_end, :] = np.maximum(
-            0, star[overlap_start:overlap_end, :] - mask[cover_start:cover_end, :]
+            0, star[overlap_start:overlap_end, :] * mask[cover_start:cover_end, :]
         )
 
         frames.append(_array_to_qimage(result))  # adding a new frame
@@ -429,5 +429,5 @@ def _array_to_qimage(array: np.array) -> QImage:
 
 
 if __name__ == '__main__':
-    show_model(elliptical_ring(100, 20, 0.5, 10, 90, 1))
+    cover(star_model([100, 100],  [0.9, 0.9]), normalize(disk(7, 100) + elliptical_ring(100, 20, 0.5, 2, 90, 0.1)), 500)
 
