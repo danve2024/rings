@@ -222,6 +222,8 @@ class Rings:
         self.mass_specific_absorption_coefficient = 2.3 * 10 ** (-3) * (m**2/g) # mass-specific absorption coefficient for silicate dust with quartz dominating
         self.absorption_coefficient = self.mass_specific_absorption_coefficient * self.density # absorption coefficient for silicate
         self.absorption = exp(-self.absorption_coefficient) # light absorption
+        #self.absorption = 0.00000001
+        print(self.absorption)
 
         # Parameters defined in self.init()
         self.angular_sma = None # angular semi-major axis
@@ -277,7 +279,7 @@ class Asteroid:
         self.disk = disk(to_pixels(self.angular_diameter/2), crop_factor) # disk
         self.rings.adjust(crop_factor)
         self.adjust(crop_factor)
-        self.model = normalize(self.disk + self.rings.model)
+        self.model = self.disk + self.rings.model
 
     def adjust(self, size: Union[float, Measure.Unit]) -> None:
         """
@@ -287,7 +289,7 @@ class Asteroid:
         """
         self.disk = disk(to_pixels(self.angular_diameter/2), size)
         self.rings.adjust(size)
-        self.model = normalize(self.disk + self.rings.model)
+        self.model = self.disk + self.rings.model
 
     def __str__(self):
         return f'asteroid(R:{self.radius(km)}km, D:{self.density(gcm3)}g/cm3, A:{self.sma(au)}, V:{self.volume(m3)}m3, M:{self.mass(kg)}kg) + ' + str(self.rings)

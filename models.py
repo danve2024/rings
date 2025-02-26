@@ -109,8 +109,9 @@ def elliptical_ring(
         inner_mask = (x_rot / a_inner) ** 2 + (y_rot / b_inner) ** 2 <= 1
     ring_mask = outer_mask & ~inner_mask
 
-    arr = np.ones(shape, dtype=float)
-    arr[ring_mask] = 1 - fill
+    arr = np.zeros(shape, dtype=float)
+    arr[ring_mask] = fill - 1
+    print(arr[ring_mask])
 
     return arr
 
@@ -323,11 +324,17 @@ def normalize(array: np.array) -> np.array:
     :param np.array array: the array to normalize
     :return: normalized array
     """
+    max = 0.
+
     for x in range(len(array)):
         for y in range(len(array[0])):
-            array[x][y] -= 1
-            if array[x][y] < 0:
-                array[x][y] = 0
+            if array[x][y] > max:
+                max = array[x][y]
+
+
+    for x in range(len(array)):
+        for y in range(len(array[0])):
+            array[x][y] = array[x][y]/max
     return array
 
 def show_model(model: np.ndarray) -> None:

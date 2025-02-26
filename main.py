@@ -28,7 +28,7 @@ Automatic values:
 defaults = {
             'radius': Measure(1, 21, km, label='R'),
             'density': Measure(1.3, 5.3, gcm3, label='D'),
-            'ring_density': Measure(0.01, 0.03, gcm3, label='d'),
+            'ring_density': Measure(0.01, 1000, gcm3, label='d'),
             'asteroid_sma': Measure(2.5, 50, au, label='A'),
             'sma': Measure(10, 1000, km, label='a'),  # Dependent slider
             'width': Measure(0.1, 20, km, label='w'), # Dependent slider
