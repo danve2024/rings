@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton, QCheckBox, \
-    QLineEdit, QDialog, QMessageBox
+    QLineEdit, QDialog, QMessageBox, QFileDialog
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QPixmap
 import matplotlib.pyplot as plt
@@ -16,6 +16,7 @@ from units import *
 from formulas import *
 from space import Asteroid, Rings, Star, hill_sphere
 from models import cover_animation
+from observations import Observations
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QGridLayout,
@@ -53,7 +54,10 @@ class Selection(QWidget):
 
         for param, measure in self.default_values.items():
             # Parameter Name Label
-            param_label = QLabel(param)
+            if self.get_unit_label(param):
+                param_label = QLabel(f'{param.replace("_", " ").replace("sma", "semi-major axis")} ({self.get_unit_label(param)})')
+            else:
+                param_label = QLabel(param.replace("_", " ").replace("sma", "semi-major axis"))
             layout.addWidget(param_label, row, 0)
 
             # Auto Checkbox (Default)
@@ -90,6 +94,22 @@ class Selection(QWidget):
         self.setLayout(layout)
         self.setWindowTitle("Parameter Selector")
         self.show()
+
+    @staticmethod
+    def get_unit_label(name: str) -> str:
+        """Get the unit label for a given parameter"""
+        units = {
+            'radius': 'km',
+            'density': 'g/cm³',
+            'ring_density': 'g/cm³',
+            'asteroid_sma': 'au',
+            'sma': 'km',
+            'width': 'km',
+            'ring_mass': 'kg',
+            'eccentricity': '',
+            'inclination': 'deg',
+        }
+        return units.get(name, '')
 
     def auto(self, state, param):
         """Auto select parameter"""
@@ -132,13 +152,64 @@ class Selection(QWidget):
         # Close the window after clicking Done
         self.close()
 
+class LoadFile(QWidget):
+    """
+    A widget to load an observations file for comparing observations with the model.
+    """
+    def __init__(self):
+        super().__init__()
+        self.button = None
+        self.proceed = None
+        self.filename = None
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Load observations file")
+        self.setGeometry(500, 500, 400, 300)
+        self.button = QPushButton("Open File", self)
+        self.button.clicked.connect(self.openFileDialog)
+        self.button.setGeometry(150, 130, 100, 30)
+
+        self.proceed = QPushButton("No File", self)
+        self.proceed.clicked.connect(self.close)
+        self.proceed.setGeometry(150, 170, 100, 30)
+        self.show()
+
+    def openFileDialog(self):
+        """
+        A function for opening the file dialog and pre-processing the selected file.
+        """
+        file_dialog = QFileDialog(self)
+        file_dialog.setNameFilter("CSV Files (*.csv)") # Search for CSV files only
+        file_dialog.setWindowTitle("Select File")
+        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
+
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            self.filename = selected_files[0]
+            self.close()
+
 
 class Model(QWidget):
     """
     A widget to display the simulation model and control parameters sliders.
     """
-    def __init__(self, parameters: dict) -> None:
+    def __init__(self, parameters: dict, observations_file: str = None) -> None:
         super().__init__()
+
+        if observations_file is None:
+            self.observations = None
+        else:
+            self.observations = Observations(observations_file) # Working with the observation data if it is available
+
+        self.magnitude_shift = None
+        self.magnitude_calibrating = None
+        self.phase_shift = None
+        self.magnitude_shift_label = None
+        self.phase_shift_label = None
+        self.magnitude_calibrating_label = None
+
         self.setWindowTitle("Asteroid with Rings Occultation Simulation")
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -166,18 +237,28 @@ class Model(QWidget):
         self.eclipse_label = QLabel("Occultation duration: 0.0 sec")
         self.layout.addWidget(self.eclipse_label)
 
+        # Sliders for working with the observed data
+        if self.observations is not None:
+            self.magnitude_shift_slider()
+            self.magnitude_calibrating_slider()
+            self.phase_shift_slider()
+
         # Show animation button
         self.animation_button = QPushButton("Simulate Occultation Animation")
         self.animation_button.clicked.connect(self.show_animation_window)
         self.layout.addWidget(self.animation_button, alignment=Qt.AlignmentFlag.AlignRight)
 
-        self.update_plot()
+        for i in range(3):
+            self.update_plot()
 
     def create_slider(self, name, measure):
         """Create a slider"""
         container = QHBoxLayout()
         unit = self.get_unit_label(name)
-        label = QLabel(f"{name.capitalize()} ({unit}):")
+        if unit:
+            label = QLabel(f"{name.replace('_', ' ').replace('sma', 'semi-major axis').capitalize()} ({unit}):")
+        else:
+            label = QLabel(name.replace('_', ' ').replace('sma', 'semi-major axis').capitalize())
         slider = QSlider(Qt.Orientation.Horizontal)
         slider.setMinimum(0)
         slider.setMaximum(100)
@@ -192,6 +273,72 @@ class Model(QWidget):
         self.layout.addLayout(container)
         self.sliders[name] = (slider, measure)
         self.slider_labels[name] = value_label
+
+    def magnitude_shift_slider(self):
+        """
+        A slider for making major shifts (0-12 mag) of the magnitude of the by a specific value selected by the slider. It is needed to work with the magnitude change (produced by the model) instead of the magnitude itself (observed).
+        """
+        container = QHBoxLayout()
+        label = QLabel('Observations magnitude shift')
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setMinimum(-20)
+        slider.setMaximum(20)
+        slider.setValue(0)
+        slider.valueChanged.connect(self.update_plot)
+        value_label = QLabel('0')
+
+        container.addWidget(label)
+        container.addWidget(slider)
+        container.addWidget(value_label)
+
+        self.layout.addLayout(container)
+
+        self.magnitude_shift = slider
+        self.magnitude_shift_label = value_label
+
+    def magnitude_calibrating_slider(self):
+        """
+            A slider for making minor shifts (0-1 mag) of the magnitude of the by a specific value selected by the slider. It is needed to work with the magnitude change (produced by the model) instead of the magnitude itself (observed).
+        """
+        container = QHBoxLayout()
+        label = QLabel('Observations magnitude calibrating')
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setMinimum(-1000)
+        slider.setMaximum(1000)
+        slider.setValue(0)
+        slider.valueChanged.connect(self.update_plot)
+        value_label = QLabel('0')
+
+        container.addWidget(label)
+        container.addWidget(slider)
+        container.addWidget(value_label)
+
+        self.layout.addLayout(container)
+
+        self.magnitude_calibrating = slider
+        self.magnitude_calibrating_label = value_label
+
+    def phase_shift_slider(self):
+        """
+        A slider for selecting the moment of the observations to compare with the model. The observation data is cropped by the x-axis and moved for the specific time span selected.
+        """
+        container = QHBoxLayout()
+        label = QLabel('Observations phase shift')
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setMinimum(0)
+        slider.setMaximum(100)
+        slider.setValue(0)
+        slider.valueChanged.connect(self.update_plot)
+        value_label = QLabel('0')
+
+        container.addWidget(label)
+        container.addWidget(slider)
+        container.addWidget(value_label)
+
+        self.layout.addLayout(container)
+
+        self.phase_shift = slider
+        self.phase_shift_label = value_label
 
     @staticmethod
     def get_unit_label(name: str) -> str:
@@ -223,14 +370,37 @@ class Model(QWidget):
 
         data, occultation_duration, self.star, self.asteroid = self.calculate_data(**params)
 
+        if self.observations is not None: # shifting (magnitude to magnitude change and time to phase) and normalizing (time to phase) the observation data
+            phase_shift = self.phase_shift.value() / 100
+            magnitude_shift = self.magnitude_shift.value()
+            magnitude_calibrating = self.magnitude_calibrating.value() / 1000
+            self.phase_shift_label.setText(str(phase_shift))
+            self.magnitude_shift_label.setText(str(magnitude_shift))
+            self.magnitude_calibrating_label.setText(str(magnitude_calibrating))
+
+            self.observations.normalize_and_shift(occultation_duration, phase_shift, magnitude_shift + magnitude_calibrating)
+
         self.ax.clear()
         self.ax.set_title("Simulation Result")
 
-        if len(data[1]) > 2:
-            x, y = zip(*data[1])
-            self.ax.plot(x, y)
+        # Plotting the observations data with the selected shifts
+        if self.observations is None:
+            if len(data[1]) > 2:
+                x, y = zip(*data[1])
+                self.ax.plot(x, y)
+            else:
+                self.ax.plot([0, 1], [0, 0])
         else:
-            self.ax.plot([0, 1], [0, 0])
+            if len(data[1]) > 2:
+                x, y = zip(*data[1])
+                self.ax.plot(x, y)
+            else:
+                self.ax.plot([0, 1], [0, 0])
+            if len(self.observations.data) > 1:
+                xo, yo = zip(*self.observations.data)
+                self.ax.plot(xo, yo, 'g')
+            else:
+                pass
 
         self.ax.invert_yaxis()
         self.ax.set_xlabel("Phase")
@@ -326,7 +496,7 @@ class AnimationWindow(QDialog):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
-        self.timer.start(66)  # ~15 FPS
+        self.timer.start(33)  # ~30 FPS
 
     def update_frame(self):
         """Update the animation frame safely."""

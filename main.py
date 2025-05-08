@@ -1,4 +1,4 @@
-from visualization import Selection, Model, app
+from visualization import Selection, LoadFile, Model, app
 from measure import Measure
 from units import *
 import sys
@@ -39,9 +39,11 @@ defaults = {
 
 # Graphics
 selector = Selection(defaults)
+load_file = LoadFile()
 app.exec()
 parameters = selector.user_values
+filename = load_file.filename
 
-window = Model(parameters)
+window = Model(parameters, filename)
 window.show()
 sys.exit(app.exec())
