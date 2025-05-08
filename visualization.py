@@ -387,24 +387,25 @@ class Model(QWidget):
         if self.observations is None:
             if len(data[1]) > 2:
                 x, y = zip(*data[1])
-                self.ax.plot(x, y)
+                self.ax.plot(x, y, label='model')
             else:
-                self.ax.plot([0, 1], [0, 0])
+                self.ax.plot([0, 1], [0, 0], label='model')
         else:
             if len(data[1]) > 2:
                 x, y = zip(*data[1])
-                self.ax.plot(x, y)
+                self.ax.plot(x, y, label='model')
             else:
-                self.ax.plot([0, 1], [0, 0])
+                self.ax.plot([0, 1], [0, 0], label='model')
             if len(self.observations.data) > 1:
                 xo, yo = zip(*self.observations.data)
-                self.ax.plot(xo, yo, 'g')
+                self.ax.plot(xo, yo, 'g', label='observations')
             else:
                 pass
 
         self.ax.invert_yaxis()
         self.ax.set_xlabel("Phase")
         self.ax.set_ylabel("Magnitude Change")
+        self.ax.legend()
         self.canvas.draw()
 
         elapsed_time = time.time() - start_time

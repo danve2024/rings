@@ -223,7 +223,6 @@ class Rings:
         self.absorption_coefficient = self.mass_specific_absorption_coefficient * self.density # absorption coefficient for silicate
         self.absorption = exp(-self.absorption_coefficient) # light absorption
         #self.absorption = 0.00000001
-        print(self.absorption)
 
         # Parameters defined in self.init()
         self.angular_sma = None # angular semi-major axis

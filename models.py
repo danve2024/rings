@@ -111,7 +111,6 @@ def elliptical_ring(
 
     arr = np.zeros(shape, dtype=float)
     arr[ring_mask] = fill - 1
-    print(arr[ring_mask])
 
     return arr
 
@@ -243,7 +242,6 @@ def cover_old(star: np.array, asteroid: np.array, initial: float) -> list:
 
     # Phase 1: Decreasing mask size
     for i in range(m - 1, 0, -1):
-        print(i)
         mask = crop(asteroid, i, star.shape,True)
         show_model(mask)
         if np.count_nonzero(mask) != 0:
