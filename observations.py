@@ -139,3 +139,9 @@ class Observations:
             new_data.append((i[0], i[1] + delta))
         self.source_data = new_data
 
+def write_data(data: list, phase_scale = 1, magnitude_shift = 0, phase_shift = 0, filename: str = 'model.csv'):
+    s = ''
+    for i in data:
+        s += f'{(i[0] + phase_shift) * phase_scale},{i[1] + magnitude_shift}\n'
+    with open(filename, 'w', encoding='utf-8-sig') as file:
+        file.write(s)
