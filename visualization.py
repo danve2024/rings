@@ -3,11 +3,10 @@ import sys
 import traceback
 
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QLabel, QPushButton, QCheckBox, \
-    QLineEdit, QDialog, QMessageBox, QFileDialog
+    QLineEdit, QDialog, QMessageBox, QFileDialog, QComboBox
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QPixmap
 import matplotlib.pyplot as plt
-from astropy.units import temperature
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 import numpy as np
 
@@ -37,6 +36,17 @@ class Selection(QWidget):
         self.checkboxes = {}
         self.mins = {}
         self.maxs = {}
+
+        self.dependent_sliders = ['sma', 'width', 'ring_mass']
+        self.user_values['other'] = {}
+
+        # Predefined values
+        self.user_values['other']['sma_start'] = 'Asteroid Radius'
+        self.user_values['other']['sma_end'] = 'Hill Sphere'
+        self.user_values['other']['ring_mass_start'] = 'Auto'
+        self.user_values['other']['ring_mass_end'] = 'Avoid Binarity'
+        self.user_values['other']['width_start'] = 10
+        self.user_values['other']['width_end'] = 'Maximum Possible'
 
         self.init_ui()
 
@@ -70,10 +80,38 @@ class Selection(QWidget):
             manual_cb = QCheckBox("Manual")
             manual_cb.stateChanged.connect(lambda state, p=param: self.manual(state, p))
             layout.addWidget(manual_cb, row, 2)
+            if param == 'sma':
+                # Min and Max Dropdowns
+                min_input = QComboBox()
+                min_input.addItems(['Asteroid Radius', 'Roche Limit'])
+                min_input.setEditable(True)
+                min_input.currentTextChanged.connect(self.set_sma_start)
+                max_input = QComboBox()
+                max_input.addItems(['Hill Sphere', 'Roche Limit'])
+                max_input.setEditable(True)
+                max_input.currentTextChanged.connect(self.set_sma_end)
+            elif param == 'ring_mass':
+                # Min and Max Dropdowns
+                min_input = QComboBox()
+                min_input.addItem('Auto')
+                min_input.setEditable(True)
+                min_input.currentTextChanged.connect(self.set_ring_mass_start)
+                max_input = QComboBox()
+                max_input.addItem('Avoid Binarity')
+                max_input.setEditable(True)
+                max_input.currentTextChanged.connect(self.set_ring_mass_end)
+            elif param == 'width':
+                # Min Input and Max Dropdown
+                min_input = QLineEdit(str(10.))
+                max_input = QComboBox()
+                max_input.addItem('Maximum Possible')
+                max_input.setEditable(True)
+                max_input.currentTextChanged.connect(self.set_width_end)
+            else:
+                # Min and Max Input Fields
+                min_input = QLineEdit(str(measure.min(measure.unit)))
+                max_input = QLineEdit(str(measure.max(measure.unit)))
 
-            # Min and Max Input Fields
-            min_input = QLineEdit(str(measure.min(measure.unit)))
-            max_input = QLineEdit(str(measure.max(measure.unit)))
             min_input.setEnabled(False)
             max_input.setEnabled(False)
             layout.addWidget(min_input, row, 3)
@@ -138,10 +176,13 @@ class Selection(QWidget):
         for param in self.default_values.keys():
             measure = self.default_values[param]
 
-            if self.checkboxes[param][0].isChecked():  # Auto selected
+            if self.checkboxes[param][0].isChecked() or param in self.dependent_sliders:  # Auto selected or the slider is dependent
                 # Use existing measure values without changes
                 self.user_values[param] = Measure(measure.min(measure.unit), measure.max(measure.unit), measure.unit,
                                                   measure.label)
+
+                if param == 'width':
+                    self.user_values['other']['width_start'] = float(self.mins[param].text())
 
             else:  # Manual selected
                 min_val = float(self.mins[param].text())
@@ -151,6 +192,22 @@ class Selection(QWidget):
 
         # Close the window after clicking Done
         self.close()
+
+    def set_sma_start(self, dropdown: str):
+        self.user_values['other']['sma_start'] = dropdown
+
+    def set_sma_end(self, dropdown: str):
+        self.user_values['other']['sma_end'] = dropdown
+
+    def set_ring_mass_start(self, dropdown: str):
+        self.user_values['other']['ring_mass_start'] = dropdown
+
+    def set_ring_mass_end(self, dropdown: str):
+        self.user_values['other']['ring_mass_end'] = dropdown
+
+    def set_width_end(self, dropdown: str):
+        self.user_values['other']['width_end'] = dropdown
+
 
 class LoadFile(QWidget):
     """
@@ -218,6 +275,13 @@ class Model(QWidget):
         self.slider_labels = {}
 
         # Default parameters
+        self.params = parameters.pop('other')
+        self.sma_start = self.params['sma_start']
+        self.sma_end = self.params['sma_end']
+        self.ring_mass_start = self.params['ring_mass_start']
+        self.ring_mass_end = self.params['ring_mass_end']
+        self.width_start = self.params['width_start']
+        self.width_end = self.params['width_end']
         self.defaults = parameters
 
         # Create sliders
@@ -384,6 +448,7 @@ class Model(QWidget):
         self.ax.set_title("Simulation Result")
 
         # Plotting the observations data with the selected shifts
+        # Plotting the observations data with the selected shifts
         if self.observations is None:
             if len(data[1]) > 2:
                 x, y = zip(*data[1])
@@ -421,17 +486,49 @@ class Model(QWidget):
 
         V = volume(radius)  # asteroid volume
         M = V * density  # asteroid mass
-        a_min = max(roche_limit(radius, density, ring_density), radius)  # semi-major axis minimum
-        # a_max = a_min * 10
-        a_max = hill_sphere(asteroid_sma, M)
+
+        a_roche = max(roche_limit(radius, density, ring_density), radius)
+        a_hill = hill_sphere(asteroid_sma, M)
+
+        # Working with dropdowns
+
+        if self.sma_start == 'Asteroid Radius':
+            a_min = radius
+        elif self.sma_start == 'Roche Limit':
+            a_min = a_roche
+        else:
+            a_min = float(self.sma_start) * km
+
+        if self.sma_end == 'Roche Limit':
+            a_max = a_roche
+        elif self.sma_end == 'Hill Sphere':
+            a_max = a_hill
+        else:
+            a_max = float(self.sma_end) * km
+
         self.defaults['sma'].update(a_min / km, a_max / km)
         sma = params['sma'].set(km)
 
-        w_max = min(a_max - a_min, sma / 2) # ring width maximum
-        self.defaults['width'].update(10, w_max / km)
+        w_min = self.width_start * km
+        if self.width_end == 'Maximum Possible':
+            w_max = min(a_max - a_min, sma / 2)
+        else:
+            w_max = float(self.width_end) * km
 
-        m_max = maximum_ring_mass(M, radius, sma)  # ring mass maximum
-        m_min = 0.5 * m_max  # ring mass minimum
+        self.defaults['width'].update(w_min / km, w_max / km)
+
+        m_predicted = maximum_ring_mass(M, radius, sma) # ring mass maximum
+
+        if self.ring_mass_end == 'Avoid Binarity':
+            m_max = m_predicted
+        else:
+            m_max = float(self.ring_mass_end) * kg
+
+        if self.ring_mass_start == 'Auto':
+            m_min = 0.5 * m_max
+        else:
+            m_min = float(self.ring_mass_start) * kg
+
         self.defaults['ring_mass'].update(m_min / kg, m_max / kg)
 
     @staticmethod
